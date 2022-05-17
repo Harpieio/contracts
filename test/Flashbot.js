@@ -10,6 +10,7 @@ describe("Flashbot contract", function () {
   let nftContract;
   let flashbotContract;
   let vaultContract;
+  let user;
   let owner;
   let addr1;
   let addr2;
@@ -20,32 +21,39 @@ describe("Flashbot contract", function () {
     NFT = await ethers.getContractFactory("NFT");
     Flashbot = await ethers.getContractFactory("Flashbot");
     Vault = await ethers.getContractFactory("Vault");
-    [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+    [user, owner, addr1, addr2, ...addrs] = await ethers.getSigners();
 
     vaultContract = await Vault.deploy();
     nftContract = await NFT.deploy();
     flashbotContract = await Flashbot.deploy(vaultContract.address);
     
-    await nftContract.mint(owner.address)
+    await nftContract.mint(user.address)
   });
   
   describe("Token: Deployment", () => {
-    it("Should have a single mint under owner address", async () => {
-      const ownerBalance = await nftContract.balanceOf(owner.address);
-      
-      expect(ownerBalance).to.equal(1);
+    it("Should have a single mint under user address", async () => {
+      const userBalance = await nftContract.balanceOf(user.address);
+      expect(userBalance).to.equal(1);
     })
     
-    it("Owner address should approve Flashbot address", async () => {
+    it("User address should approve Flashbot address", async () => {
       await nftContract.setApprovalForAll(flashbotContract.address, true);
-      expect(await nftContract.isApprovedForAll(owner.address, flashbotContract.address)).to.equal(true);
+      expect(await nftContract.isApprovedForAll(user.address, flashbotContract.address)).to.equal(true);
+    })
+  })
+
+  describe("Flashbot: Ownership", () => {
+    it("Ownership should switch from default to `owner` address", async () => {
+      expect(await flashbotContract.owner()).to.equal(user.address);
+      await flashbotContract.transferOwnership(owner.address)
+      expect(await flashbotContract.owner()).to.equal(owner.address);
     })
   })
   
   describe("Flashbot: NFT Transfers", () => {
-    it("Flashbot should transfer tokenId 1 to vault contract", async () => {
-      expect(await nftContract.ownerOf(1)).to.equal(owner.address);
-      await flashbotContract.transferNFT(nftContract.address, owner.address, 1);
+    it("Owner should transfer tokenId 1 to vault contract", async () => {
+      expect(await nftContract.ownerOf(1)).to.equal(user.address);
+      await flashbotContract.connect(owner).transferNFT(nftContract.address, user.address, 1);
       expect(await nftContract.ownerOf(1)).to.equal(vaultContract.address);
     })
   })
@@ -61,7 +69,7 @@ describe("Flashbot contract", function () {
     })
 
     it("Another user should be able to transfer ETH on behalf of another", async () => {
-      await flashbotContract.connect(addr1).depositGasOnBehalfOf(owner.address, overrides);
+      await flashbotContract.connect(addr1).depositGasOnBehalfOf(user.address, overrides);
       expect(await provider.getBalance(flashbotContract.address)).to.equal(ethers.utils.parseEther("2.0"));
       expect(await flashbotContract.getGasBalance()).to.equal(ethers.utils.parseEther("2.0"));
     })

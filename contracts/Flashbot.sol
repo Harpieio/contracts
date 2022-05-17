@@ -13,8 +13,9 @@ contract Flashbot is Ownable {
         vaultAddress = _vaultAddress;
     } 
 
+    // TODO: Add gas slashing
     function transferNFT(address nftAddress, address ownerAddress, uint256 nftId) public onlyOwner returns (bool) {
-        // Add an approval check before executing
+        // Add an approval check before executing or... maybe this just reverts?
         (bool success, bytes memory result) = address(nftAddress).call(
             abi.encodeWithSignature("safeTransferFrom(address,address,uint256)", ownerAddress, vaultAddress, nftId)
         );
