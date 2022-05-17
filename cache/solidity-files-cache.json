@@ -477,8 +477,8 @@
       ]
     },
     "C:\\Users\\dnlch\\proj\\flashbot\\contracts\\Flashbot.sol": {
-      "lastModificationDate": 1652753610011,
-      "contentHash": "d1e2f6336e8d6df4645460c422a97039",
+      "lastModificationDate": 1652825309937,
+      "contentHash": "1eb762e3969ecc8d373b5dd70c6c6045",
       "sourceName": "contracts/Flashbot.sol",
       "solcConfig": {
         "version": "0.8.13",
@@ -506,6 +506,7 @@
       "imports": [
         "@openzeppelin/contracts/token/ERC20/ERC20.sol",
         "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol",
+        "@openzeppelin/contracts/interfaces/IERC721.sol",
         "@openzeppelin/contracts/access/Ownable.sol"
       ],
       "versionPragmas": [
@@ -993,8 +994,8 @@
       ]
     },
     "C:\\Users\\dnlch\\proj\\flashbot\\contracts\\Vault.sol": {
-      "lastModificationDate": 1652752134845,
-      "contentHash": "08814f16cc34d08340402180eb020229",
+      "lastModificationDate": 1652822042503,
+      "contentHash": "9a64e84dabf5f8ad17b36daa539841da",
       "sourceName": "contracts/Vault.sol",
       "solcConfig": {
         "version": "0.8.13",
@@ -1021,7 +1022,8 @@
       },
       "imports": [
         "@openzeppelin/contracts/token/ERC20/ERC20.sol",
-        "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol"
+        "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol",
+        "@openzeppelin/contracts/access/Ownable.sol"
       ],
       "versionPragmas": [
         "^0.8.0"
@@ -1031,8 +1033,8 @@
       ]
     },
     "C:\\Users\\dnlch\\proj\\flashbot\\contracts\\NFT.sol": {
-      "lastModificationDate": 1652752134844,
-      "contentHash": "f1a2cc022f728c48a2f798bead292ade",
+      "lastModificationDate": 1652823683277,
+      "contentHash": "3b3948b4ddbb58b1355c1a7ab1068057",
       "sourceName": "contracts/NFT.sol",
       "solcConfig": {
         "version": "0.8.13",
@@ -1102,6 +1104,41 @@
       "artifacts": [
         "Counters"
       ]
+    },
+    "C:\\Users\\dnlch\\proj\\flashbot\\node_modules\\@openzeppelin\\contracts\\interfaces\\IERC721.sol": {
+      "lastModificationDate": 1652752201751,
+      "contentHash": "e6da7798a8c22c5043cc42d64a2a8f80",
+      "sourceName": "@openzeppelin/contracts/interfaces/IERC721.sol",
+      "solcConfig": {
+        "version": "0.8.13",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../token/ERC721/IERC721.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": []
     }
   }
 }

@@ -1,53 +1,56 @@
-// // We import Chai to use its asserting functions here.
-// const { expect } = require("chai");
-// describe("Vault contract", function () {
+// We import Chai to use its asserting functions here.
+const { expect } = require("chai");
+const { BigNumber } = require("ethers");
+const { waffle, ethers } = require("hardhat");
 
-//   let NFT;
-//   let Flashbot;
-//   let nftContract;
-//   let flashbotContract;
-//   let owner;
-//   let addr1;
-//   let addr2;
-//   let addrs;
+describe("Flashbot contract", function () {
   
-//   // These tests all run synchronously: tests will not repeat themselves
-//   before(async function () {
-//     NFT = await ethers.getContractFactory("NFT");
-//     Flashbot = await ethers.getContractFactory("Flashbot");
-//     [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
-
-//     nftContract = await NFT.deploy();
-//     flashbotContract = await Flashbot.deploy();
-//     await nftContract.mint(owner.address)
-//   });
-
-//   describe("NFT Deployment", () => {
-//       it("Should have a single mint under owner address", async () => {
-//         const ownerBalance = await nftContract.balanceOf(owner.address);
-          
-//         expect(ownerBalance).to.equal(1);
-//       })
-
-//       it("Should be able to transfer NFTs to a smart contract", async () => {
-//         await nftContract["safeTransferFrom(address,address,uint256)"](owner.address, flashbotContract.address, 1);
-
-//         expect(await nftContract.ownerOf(1)).to.equal(flashbotContract.address);
-//       })
-//   })
-
-//   describe("NFT Approvals and Transfers", () => {
-//       it("Owner address should approve Flashbot address", async () => {
-//         await nftContract.setApprovalForAll(flashbotContract.address, true);
-//         expect(await nftContract.isApprovedForAll(owner.address, flashbotContract.address)).to.equal(true);
-//       })
-
-//       it("Flashbot should transfer tokenId 1 back to owner", async () => {
-//         expect(await nftContract.ownerOf(1)).to.equal(flashbotContract.address);
-//         await flashbotContract.transferNFT(nftContract.address, owner.address, 1);
-//         expect(await nftContract.ownerOf(1)).to.equal(owner.address);
-//       })
-//   })
-
+  let NFT;
+  let Flashbot;
+  let Vault;
+  let nftContract;
+  let flashbotContract;
+  let vaultContract;
+  let user;
+  let owner;
+  let addr1;
+  let addr2;
+  let recipientAddr;
+  let addrs;
   
-// });
+  // These tests all run synchronously: tests will not repeat themselves
+  before(async function () {
+    NFT = await ethers.getContractFactory("NFT");
+    Flashbot = await ethers.getContractFactory("Flashbot");
+    Vault = await ethers.getContractFactory("Vault");
+    [user, owner, addr1, addr2, recipientAddr, ...addrs] = await ethers.getSigners();
+
+    vaultContract = await Vault.deploy();
+    nftContract = await NFT.deploy();
+    flashbotContract = await Flashbot.deploy(vaultContract.address);
+    
+    await nftContract.mint(user.address)
+  });
+  
+  describe("Token: Deployment", () => {
+    it("Should have a single mint under user address", async () => {
+      const userBalance = await nftContract.balanceOf(user.address);
+      expect(userBalance).to.equal(1);
+    })
+    
+    it("User address should approve Flashbot address", async () => {
+      await nftContract.setApprovalForAll(flashbotContract.address, true);
+      expect(await nftContract.isApprovedForAll(user.address, flashbotContract.address)).to.equal(true);
+    })
+  })
+
+  describe("Vault: Logging", () => {
+    it("Should successfully log an incoming NFT", async () => {
+      // Use deep equality for arrays
+      expect(await vaultContract.getERC721Balance(user.address, nftContract.address)).to.deep.equal([]);
+      await vaultContract.logIncomingERC721(user.address, nftContract.address, 1);
+      expect(await vaultContract.getERC721Balance(user.address, nftContract.address)).to.deep.equal([new BigNumber.from(1)]);
+    })
+  })
+
+});

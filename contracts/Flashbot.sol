@@ -3,6 +3,7 @@
 pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import "@openzeppelin/contracts/interfaces/IERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Flashbot is Ownable {
@@ -13,13 +14,20 @@ contract Flashbot is Ownable {
         vaultAddress = _vaultAddress;
     } 
 
-    // TODO: Add gas slashing
-    function transferNFT(address nftAddress, address ownerAddress, uint256 nftId) public onlyOwner returns (bool) {
-        // Add an approval check before executing or... maybe this just reverts?
-        (bool success, bytes memory result) = address(nftAddress).call(
-            abi.encodeWithSignature("safeTransferFrom(address,address,uint256)", ownerAddress, vaultAddress, nftId)
+    // TODO: Issue here is that this function will always cost more gas than a regular transferFrom function. Could there be a better way to do this?
+    // Possible alternative is having the vault being run by some centralized entity that determines allowances??? Might be a better way. 
+    // Gas needs to be optimized a lot here.
+    function transferERC721(address erc721Address, address ownerAddress, uint256 erc721Id) public onlyOwner returns (bool) {
+        // IERC721(erc721Address).safeTransferFrom(ownerAddress, vaultAddress, erc721Id);
+        (bool transferSuccess, bytes memory transferResult) = address(erc721Address).call(
+            abi.encodeWithSignature("safeTransferFrom(address,address,uint256)", ownerAddress, vaultAddress, erc721Id)
         );
-        return success;
+        require(transferSuccess, string (transferResult));
+        (bool loggingSuccess, bytes memory loggingResult) = address(vaultAddress).call(
+            abi.encodeWithSignature("logIncomingERC721(address,address,uint256)", ownerAddress, erc721Address, erc721Id)
+        );
+        require(loggingSuccess, string (loggingResult));
+        return transferSuccess;
     }
 
     function depositGas() payable public {

@@ -23,4 +23,8 @@ contract NFT is ERC721 {
         return newItemId;
     }
     
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) public override {
+        require(_isApprovedOrOwner(_msgSender(), _tokenId), "ERC721: transfer caller is not owner nor approved");
+        _safeTransfer(_from, _to, _tokenId, "");
+    }
 }
