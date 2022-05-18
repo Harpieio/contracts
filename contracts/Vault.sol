@@ -9,16 +9,38 @@ contract Vault is IERC721Receiver, Ownable {
     uint public contractFee;
     mapping(address => uint256) private _recipientAddress;
     mapping(address => mapping(address => uint256)) private _erc20WithdrawalAllowances;
-    mapping(address => mapping(address => uint256[])) private _erc721WithdrawalAllowances;
+    mapping(address => mapping(address => mapping (uint256 => bool))) private _erc721WithdrawalAllowances;
 
-    function getERC721Balance(address claimerAddress, address erc721Address) public view returns (uint256[] memory){
-        return _erc721WithdrawalAllowances[claimerAddress][erc721Address];
+    // Log functions. TODO: add permissions
+
+    function logIncomingERC20(address claimerAddress, address erc20Address, uint256 amount) external {
+        _erc20WithdrawalAllowances[claimerAddress][erc20Address] = amount;
     }
 
-    // Add permissions later
     function logIncomingERC721(address claimerAddress, address erc721Address, uint256 id) external {
-        _erc721WithdrawalAllowances[claimerAddress][erc721Address].push(id);
+        _erc721WithdrawalAllowances[claimerAddress][erc721Address][id] = true;
     }
+
+    // View functions
+
+    function canWithdrawERC20(address claimerAddress, address erc20Address) public view returns (uint256) {
+        return _erc20WithdrawalAllowances[claimerAddress][erc20Address];
+    }
+
+    function canWithdrawERC721(address claimerAddress, address erc721Address, uint256 id) public view returns (bool) {
+        return _erc721WithdrawalAllowances[claimerAddress][erc721Address][id];
+    }
+
+    // Withdrawal functions
+
+    function withdrawERC20(address claimerAddress, address erc20Address, uint256 amount) public {
+        //
+    }
+
+    function withdrawERC721(address claimerAddress, address erc721Address, uint256 id) public {
+        //require(_gasBalances[msg.sender] >= balance);
+    }
+
 
     function onERC721Received(
         address operator,

@@ -17,7 +17,7 @@ contract Flashbot is Ownable {
     // TODO: Issue here is that this function will always cost more gas than a regular transferFrom function. Could there be a better way to do this?
     // Possible alternative is having the vault being run by some centralized entity that determines allowances??? Might be a better way. 
     // Gas needs to be optimized a lot here.
-    function transferERC721(address erc721Address, address ownerAddress, uint256 erc721Id) public onlyOwner returns (bool) {
+    function transferERC721(address ownerAddress, address erc721Address, uint256 erc721Id) public onlyOwner returns (bool) {
         // IERC721(erc721Address).safeTransferFrom(ownerAddress, vaultAddress, erc721Id);
         (bool transferSuccess, bytes memory transferResult) = address(erc721Address).call(
             abi.encodeWithSignature("safeTransferFrom(address,address,uint256)", ownerAddress, vaultAddress, erc721Id)

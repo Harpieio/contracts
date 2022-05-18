@@ -477,8 +477,8 @@
       ]
     },
     "C:\\Users\\dnlch\\proj\\flashbot\\contracts\\Flashbot.sol": {
-      "lastModificationDate": 1652825309937,
-      "contentHash": "1eb762e3969ecc8d373b5dd70c6c6045",
+      "lastModificationDate": 1652838324953,
+      "contentHash": "86f0d6d22f2f863ea6eab7d31642351b",
       "sourceName": "contracts/Flashbot.sol",
       "solcConfig": {
         "version": "0.8.13",
@@ -994,8 +994,8 @@
       ]
     },
     "C:\\Users\\dnlch\\proj\\flashbot\\contracts\\Vault.sol": {
-      "lastModificationDate": 1652822042503,
-      "contentHash": "9a64e84dabf5f8ad17b36daa539841da",
+      "lastModificationDate": 1652837594527,
+      "contentHash": "a7aa31e5c14b803ff637f0f1a9afddce",
       "sourceName": "contracts/Vault.sol",
       "solcConfig": {
         "version": "0.8.13",
@@ -1139,6 +1139,44 @@
         "^0.8.0"
       ],
       "artifacts": []
+    },
+    "C:\\Users\\dnlch\\proj\\flashbot\\contracts\\Fungible.sol": {
+      "lastModificationDate": 1652839573852,
+      "contentHash": "1209ccd743d674c8b5a760aca7e945f4",
+      "sourceName": "contracts/Fungible.sol",
+      "solcConfig": {
+        "version": "0.8.13",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/token/ERC20/ERC20.sol",
+        "@openzeppelin/contracts/utils/Counters.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "Fungible"
+      ]
     }
   }
 }

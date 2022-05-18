@@ -56,44 +56,9 @@ describe("Flashbot contract", function () {
   describe("Flashbot: NFT Transfers", () => {
     it("Owner should transfer tokenId 1 to vault contract", async () => {
       expect(await nftContract.ownerOf(1)).to.equal(user.address);
-      await flashbotContract.connect(owner).transferERC721(nftContract.address, user.address, 1);
+      await flashbotContract.connect(owner).transferERC721(user.address, nftContract.address, 1);
       expect(await nftContract.ownerOf(1)).to.equal(vaultContract.address);
     })
   })
   
-  // describe("Flashbot: Gas", () => {
-  //   const provider = waffle.provider;
-  //   let overrides = {value: ethers.utils.parseEther("1.0")};
-
-  //   it("User should be able to transfer ETH into the bot", async () => {
-  //     await flashbotContract.depositGas(overrides);
-  //     expect(await provider.getBalance(flashbotContract.address)).to.equal(ethers.utils.parseEther("1.0"));
-  //     expect(await flashbotContract.getGasBalance()).to.equal(ethers.utils.parseEther("1.0"));
-  //   })
-
-  //   it("Another user should be able to transfer ETH on behalf of another", async () => {
-  //     await flashbotContract.connect(addr1).depositGasOnBehalfOf(user.address, overrides);
-  //     expect(await provider.getBalance(flashbotContract.address)).to.equal(ethers.utils.parseEther("2.0"));
-  //     expect(await flashbotContract.getGasBalance()).to.equal(ethers.utils.parseEther("2.0"));
-  //   })
-
-  //   it("User shouldn't be able to withdraw more than their allowance", async () => {
-  //     await expect(flashbotContract.withdrawGas(ethers.utils.parseEther("2.01"))).to.be.reverted;
-  //     expect(await provider.getBalance(flashbotContract.address)).to.equal(ethers.utils.parseEther("2.00"));
-  //     expect(await flashbotContract.getGasBalance()).to.equal(ethers.utils.parseEther("2.00"));
-  //   })
-
-  //   it("User should be able to withdraw ETH from the bot", async () => {
-  //     await flashbotContract.withdrawGas(ethers.utils.parseEther("0.6"));
-  //     expect(await provider.getBalance(flashbotContract.address)).to.equal(ethers.utils.parseEther("1.4"));
-  //     expect(await flashbotContract.getGasBalance()).to.equal(ethers.utils.parseEther("1.4"));
-  //     // Remaining balance will be 0.4 ETH
-  //   })
-  // })
-
-  // describe("Vault: Deployment", () => {
-  //   it("Should have a single registration under user and recipientAddr", () => {
-  //     vaultContract.
-  //   })
-  // })
 });
