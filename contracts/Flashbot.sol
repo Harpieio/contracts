@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Flashbot is Ownable {
     address public vaultAddress;
-    mapping(address => uint256) private _gasBalances;
 
     constructor(address _vaultAddress) {
         vaultAddress = _vaultAddress;

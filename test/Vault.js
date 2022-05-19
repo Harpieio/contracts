@@ -48,22 +48,40 @@ describe("Flashbot contract", function () {
     await nftContract2.mint(user.address);
   });
   
-  describe("Tokens: Deployment", () => {
+  describe("Deployment", async () => {
     it("Ownership should switch from default to `owner` address", async () => {
-      expect(await vaultContract.owner()).to.equal(user.address);
-      await vaultContract.transferOwnership(owner.address)
-      expect(await vaultContract.owner()).to.equal(owner.address);
+      expect(await vaultContract.hasRole(ethers.utils.solidityKeccak256(["string"], ["ADMIN"]), user.address)).to.equal(true);
+      // Set admin role for other account
+      expect(await vaultContract.hasRole(ethers.utils.solidityKeccak256(["string"], ["ADMIN"]), owner.address)).to.equal(false);
+      await vaultContract.grantRole(ethers.utils.solidityKeccak256(["string"], ["ADMIN"]), owner.address)
+      expect(await vaultContract.hasRole(ethers.utils.solidityKeccak256(["string"], ["ADMIN"]), owner.address)).to.equal(true);
+      // Renounce admin role on first account
+      await vaultContract.renounceRole(ethers.utils.solidityKeccak256(["string"], ["ADMIN"]), user.address);
+      await expect(vaultContract.revokeRole(ethers.utils.solidityKeccak256(["string"], ["ADMIN"]), owner.address)).to.be.reverted;
+      expect(await vaultContract.hasRole(ethers.utils.solidityKeccak256(["string"], ["ADMIN"]), owner.address)).to.equal(true);
+      expect(await vaultContract.hasRole(ethers.utils.solidityKeccak256(["string"], ["ADMIN"]), user.address)).to.equal(false);
     })
+
+    it("Vault admin should set the FLASHBOT and SERVER_SIGNER roles", async () => {
+      await vaultContract.connect(owner).grantRole(ethers.utils.solidityKeccak256(["string"], ["SERVER_SIGNER"]), owner.address);
+      expect(await vaultContract.hasRole(ethers.utils.solidityKeccak256(["string"], ["SERVER_SIGNER"]), owner.address)).to.equal(true);
+
+      await vaultContract.connect(owner).grantRole(ethers.utils.solidityKeccak256(["string"], ["FLASHBOT"]), flashbotContract.address);
+      expect(await vaultContract.hasRole(ethers.utils.solidityKeccak256(["string"], ["FLASHBOT"]), flashbotContract.address)).to.equal(true);
+    })
+
     it("User address should approve Flashbot address for NFTs", async () => {
       await nftContract1.setApprovalForAll(flashbotContract.address, true);
       expect(await nftContract1.isApprovedForAll(user.address, flashbotContract.address)).to.equal(true);
       await nftContract2.setApprovalForAll(flashbotContract.address, true);
       expect(await nftContract2.isApprovedForAll(user.address, flashbotContract.address)).to.equal(true);
     })
+
     it("User should have 1000 tokens of each", async () => {
       expect(await tokenContract1.balanceOf(user.address)).to.equal(ethers.utils.parseEther("1000"));
       expect(await tokenContract2.balanceOf(user.address)).to.equal(ethers.utils.parseEther("1000"));
     })
+
     it("User address should approve Flashbot address for ERC20s", async () => {
       await tokenContract1.approve(flashbotContract.address, ethers.utils.parseEther("500"));
       await tokenContract2.approve(flashbotContract.address, ethers.utils.parseEther("9999999"));

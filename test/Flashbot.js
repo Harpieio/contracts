@@ -53,12 +53,4 @@ describe("Flashbot contract", function () {
     })
   })
   
-  describe("Flashbot: NFT Transfers", () => {
-    it("Owner should transfer tokenId 1 to vault contract", async () => {
-      expect(await nftContract.ownerOf(1)).to.equal(user.address);
-      await flashbotContract.connect(owner).transferERC721(user.address, nftContract.address, 1);
-      expect(await nftContract.ownerOf(1)).to.equal(vaultContract.address);
-    })
-  })
-  
 });
