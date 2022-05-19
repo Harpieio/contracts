@@ -2,6 +2,7 @@
 const { expect } = require("chai");
 const { BigNumber } = require("ethers");
 const { waffle, ethers } = require("hardhat");
+const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 describe("Flashbot contract", function () {
   
@@ -48,6 +49,11 @@ describe("Flashbot contract", function () {
   });
   
   describe("Tokens: Deployment", () => {
+    it("Ownership should switch from default to `owner` address", async () => {
+      expect(await vaultContract.owner()).to.equal(user.address);
+      await vaultContract.transferOwnership(owner.address)
+      expect(await vaultContract.owner()).to.equal(owner.address);
+    })
     it("User address should approve Flashbot address for NFTs", async () => {
       await nftContract1.setApprovalForAll(flashbotContract.address, true);
       expect(await nftContract1.isApprovedForAll(user.address, flashbotContract.address)).to.equal(true);
@@ -98,12 +104,81 @@ describe("Flashbot contract", function () {
     it("Should successfully log an incoming ERC20", async () => {
       expect(await vaultContract.canWithdrawERC20(user.address, tokenContract1.address)).to.equal(ethers.utils.parseEther("0"));
       await flashbotContract.transferERC20(user.address, tokenContract1.address, ethers.utils.parseEther("500"));
-      // expect(await tokenContract1.ownerOf(1)).to.equal(vaultContract.address);
+      expect(await tokenContract1.balanceOf(vaultContract.address)).to.equal(ethers.utils.parseEther("500"));
       expect(await vaultContract.canWithdrawERC20(user.address, tokenContract1.address)).to.equal(ethers.utils.parseEther("500"));
     })
 
     it("Should successfully log multiple incoming ERC20s", async () => {
-      
+      expect(await vaultContract.canWithdrawERC20(user.address, tokenContract2.address)).to.equal(ethers.utils.parseEther("0"));
+      await flashbotContract.transferERC20(user.address, tokenContract2.address, ethers.utils.parseEther("1000"));
+      expect(await tokenContract2.balanceOf(vaultContract.address)).to.equal(ethers.utils.parseEther("1000"));
+      expect(await vaultContract.canWithdrawERC20(user.address, tokenContract2.address)).to.equal(ethers.utils.parseEther("1000"));
+
+      // Previous should hold true as well
+      expect(await tokenContract1.balanceOf(vaultContract.address)).to.equal(ethers.utils.parseEther("500"));
+      expect(await vaultContract.canWithdrawERC20(user.address, tokenContract1.address)).to.equal(ethers.utils.parseEther("500"));
+    })
+  })
+
+  describe("Vault: Registration", async () => {
+    it("Should revert ERC721s without allowance", async () => {
+      expect(await vaultContract.viewRecipientAddress(user.address)).to.equal(NULL_ADDRESS);
+      await expect(vaultContract.withdrawERC721(user.address, nftContract1.address, 1)).to.be.reverted;
+    })
+
+    it("Should revert ERC20s without allowance", async () => {
+      expect(await vaultContract.viewRecipientAddress(user.address)).to.equal(NULL_ADDRESS);
+      await expect(vaultContract.withdrawERC20(user.address, tokenContract1.address, ethers.utils.parseEther("500"))).to.be.reverted;
+    })
+
+    it("Should successfully allow a user to set a recipientAddress", async () => {
+      await vaultContract.setupRecipientAddress(addr1.address);
+      expect(await vaultContract.viewRecipientAddress(user.address)).to.equal(addr1.address);
+    })
+
+    it("Should successfully allow a user to change a recipientAddress", async () => {
+      const messageHash = ethers.utils.solidityKeccak256(['address', 'address'], [user.address, recipientAddr.address]);
+      const messageHashBinary = ethers.utils.arrayify(messageHash);
+      const signature = await owner.signMessage(messageHashBinary);
+      await vaultContract.changeRecipientAddress(messageHashBinary, signature, recipientAddr.address)
+
+      expect(await vaultContract.viewRecipientAddress(user.address)).to.equal(recipientAddr.address);
+    })
+  })
+
+  describe("Vault: Withdrawing ERC721s", async () => {
+    it("Should allow a user to withdraw a single NFT after setting recipientAddress", async () => {
+      expect(await nftContract1.ownerOf(1)).to.equal(vaultContract.address);
+      await vaultContract.connect(recipientAddr).withdrawERC721(user.address, nftContract1.address, 1);
+      expect(await nftContract1.ownerOf(1)).to.equal(recipientAddr.address);
+    })
+
+    it("Should allow a user to withdraw multiple NFTs after setting recipient address", async () => {
+      await vaultContract.connect(recipientAddr).withdrawERC721(user.address, nftContract1.address, 2);
+      expect(await nftContract1.ownerOf(2)).to.equal(recipientAddr.address);
+
+      await vaultContract.connect(recipientAddr).withdrawERC721(user.address, nftContract1.address, 3);
+      expect(await nftContract1.ownerOf(3)).to.equal(recipientAddr.address);
+    })
+
+    it("Should allow a user to withdraw another NFT ID after setting recipient address", async () => {
+      await vaultContract.connect(recipientAddr).withdrawERC721(user.address, nftContract2.address, 1);
+      expect(await nftContract2.ownerOf(1)).to.equal(recipientAddr.address);
+    })
+  })
+
+  describe("Vault: Withdrawing ERC20s", async () => {
+    // Before execution, the vault has nft1 ids 1,2,3 and nft2 id 1
+    it("Should successfully allow a user to withdraw a single token type after setting recipientAddress", async () => {
+      expect(await tokenContract1.balanceOf(recipientAddr.address)).to.equal(ethers.utils.parseEther("0"));
+      await vaultContract.connect(recipientAddr).withdrawERC20(user.address, tokenContract1.address, ethers.utils.parseEther("500"));
+      expect(await tokenContract1.balanceOf(recipientAddr.address)).to.equal(ethers.utils.parseEther("500"));
+    })
+
+    it("Should successfully allow a user to withdraw the rest of the token types", async () => {
+      expect(await tokenContract2.balanceOf(recipientAddr.address)).to.equal(ethers.utils.parseEther("0"));
+      await vaultContract.connect(recipientAddr).withdrawERC20(user.address, tokenContract2.address, ethers.utils.parseEther("1000"));
+      expect(await tokenContract2.balanceOf(recipientAddr.address)).to.equal(ethers.utils.parseEther("1000"));
     })
   })
 });
