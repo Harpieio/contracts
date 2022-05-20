@@ -9,21 +9,18 @@ import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
-contract Vault is IERC721Receiver, AccessControl {
+contract Vault is IERC721Receiver {
     using ECDSA for bytes32;
-    bytes32 public constant ADMIN = keccak256("ADMIN");
-    bytes32 public constant SERVER_SIGNER = keccak256("SERVER_SIGNER");
-    bytes32 public constant FLASHBOT = keccak256("FLASHBOT");
-    uint public contractFee;
+
+    address private flashbot;
+    address private serverSigner;
     mapping(address => address) private _recipientAddress;
     mapping(address => mapping(address => uint256)) private _erc20WithdrawalAllowances;
     mapping(address => mapping(address => mapping (uint256 => bool))) private _erc721WithdrawalAllowances;
 
-    constructor() {
-        _setupRole(ADMIN, msg.sender);
-        _setRoleAdmin(ADMIN, ADMIN);
-        _setRoleAdmin(SERVER_SIGNER, ADMIN);
-        _setRoleAdmin(FLASHBOT, ADMIN);
+    constructor(address _flashbot, address _serverSigner) {
+        flashbot = _flashbot;
+        serverSigner = _serverSigner;
     }
 
     function setupRecipientAddress(address _recipient) public {
@@ -35,7 +32,7 @@ contract Vault is IERC721Receiver, AccessControl {
         // Have server sign a message in the format [protectedWalletAddress, newRecipientAddress]
         // msg.sender == protectedWalletAddress (meaning that the protected wallet will submit this transaction)
         // This function requires extensive testing
-        require(hasRole(SERVER_SIGNER, _data.toEthSignedMessageHash().recover(_signature)), "Signature must be from SERVER SIGNER role");
+        require(_data.toEthSignedMessageHash().recover(_signature) == serverSigner, "Signature must be from SERVER SIGNER role");
         require (keccak256(abi.encodePacked(msg.sender, _newRecipientAddress)) == _data, "Provided signature does not match required parameters");
         _recipientAddress[msg.sender] = _newRecipientAddress;
     }
@@ -47,11 +44,13 @@ contract Vault is IERC721Receiver, AccessControl {
 
     // Log functions. TODO: add permissions
 
-    function logIncomingERC20(address _originalAddress, address _erc20Address, uint256 _amount) external onlyRole(FLASHBOT) {
+    function logIncomingERC20(address _originalAddress, address _erc20Address, uint256 _amount) external{
+        require(msg.sender == flashbot, "Only the flashbot contract can log funds.");
         _erc20WithdrawalAllowances[_originalAddress][_erc20Address] = _amount;
     }
 
-    function logIncomingERC721(address _originalAddress, address _erc721Address, uint256 _id) external onlyRole(FLASHBOT) {
+    function logIncomingERC721(address _originalAddress, address _erc721Address, uint256 _id) external {
+        require(msg.sender == flashbot, "Only the flashbot contract can log funds.");
         _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id] = true;
     }
 

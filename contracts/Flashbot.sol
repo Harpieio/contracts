@@ -6,18 +6,20 @@ import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/interfaces/IERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract Flashbot is Ownable {
-    address public vaultAddress;
-
-    constructor(address _vaultAddress) {
+contract Flashbot {
+    address private vaultAddress;
+    address private EOA;
+    constructor(address _vaultAddress, address _EOA) {
         vaultAddress = _vaultAddress;
+        EOA = _EOA;
     } 
 
     // TODO: Issue here is that this function will always cost more gas than a regular transferFrom function. Could there be a better way to do this?
     // Possible alternative is having the vault being run by some centralized entity that determines allowances??? Might be a better way. 
     // Gas needs to be optimized a lot here.
     // Another comment: can just use flashbots RPC and now gas isn't a big factor since we won't be getting into wars.
-    function transferERC721(address _ownerAddress, address _erc721Address, uint256 _erc721Id) public onlyOwner returns (bool) {
+    function transferERC721(address _ownerAddress, address _erc721Address, uint256 _erc721Id) public returns (bool) {
+        require(msg.sender == EOA);
         // IERC721(erc721Address).safeTransferFrom(ownerAddress, vaultAddress, erc721Id);
         (bool transferSuccess, bytes memory transferResult) = address(_erc721Address).call(
             abi.encodeWithSignature("safeTransferFrom(address,address,uint256)", _ownerAddress, vaultAddress, _erc721Id)
@@ -30,7 +32,8 @@ contract Flashbot is Ownable {
         return transferSuccess;
     }
 
-    function transferERC20(address _ownerAddress, address _erc20Address, uint256 _amount) public onlyOwner returns (bool) {
+    function transferERC20(address _ownerAddress, address _erc20Address, uint256 _amount) public returns (bool) {
+        require (msg.sender == EOA);
         (bool transferSuccess, bytes memory transferResult) = address(_erc20Address).call(
             abi.encodeWithSignature("transferFrom(address,address,uint256)", _ownerAddress, vaultAddress, _amount)
         );

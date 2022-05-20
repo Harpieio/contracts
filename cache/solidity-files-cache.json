@@ -477,8 +477,8 @@
       ]
     },
     "C:\\Users\\dnlch\\proj\\flashbot\\contracts\\Flashbot.sol": {
-      "lastModificationDate": 1653001309379,
-      "contentHash": "813e65818a5672418f669f2292ab9dc3",
+      "lastModificationDate": 1653003217919,
+      "contentHash": "4f87cd48523725a9c6056728cc02ec46",
       "sourceName": "contracts/Flashbot.sol",
       "solcConfig": {
         "version": "0.8.13",
@@ -994,8 +994,8 @@
       ]
     },
     "C:\\Users\\dnlch\\proj\\flashbot\\contracts\\Vault.sol": {
-      "lastModificationDate": 1653001615995,
-      "contentHash": "df982ae3ab5a2da84b1aaebf90d6d02c",
+      "lastModificationDate": 1653004261560,
+      "contentHash": "30b724e9f4c217de8f71b7e063858efc",
       "sourceName": "contracts/Vault.sol",
       "solcConfig": {
         "version": "0.8.13",

@@ -2,6 +2,7 @@
 const { expect } = require("chai");
 const { BigNumber } = require("ethers");
 const { waffle, ethers } = require("hardhat");
+const { getContractAddress } = require("@ethersproject/address");
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 describe("Flashbot contract", function () {
@@ -17,7 +18,6 @@ describe("Flashbot contract", function () {
   let flashbotContract;
   let vaultContract;
   let user;
-  let owner;
   let addr1;
   let addr2;
   let recipientAddr;
@@ -31,14 +31,26 @@ describe("Flashbot contract", function () {
     Token2 = await ethers.getContractFactory("Fungible");
     Flashbot = await ethers.getContractFactory("Flashbot");
     Vault = await ethers.getContractFactory("Vault");
-    [user, owner, addr1, addr2, recipientAddr, ...addrs] = await ethers.getSigners();
+    [user, serverSigner, flashbotSigner, addr1, addr2, recipientAddr, ...addrs] = await ethers.getSigners();
 
-    vaultContract = await Vault.deploy();
+    // Determine upcoming contract addresses
+    const txCount = await user.getTransactionCount();
+    const flashbotAddress = getContractAddress({
+      from: user.address,
+      nonce: txCount
+    })
+
+    const vaultAddress = getContractAddress({
+      from: user.address,
+      nonce: txCount + 1
+    })
+
+    flashbotContract = await Flashbot.deploy(vaultAddress, flashbotSigner.address);
+    vaultContract = await Vault.deploy(flashbotAddress, serverSigner.address);
     nftContract1 = await NFT1.deploy();
     nftContract2 = await NFT2.deploy();
     tokenContract1 = await Token1.deploy();
     tokenContract2 = await Token2.deploy();
-    flashbotContract = await Flashbot.deploy(vaultContract.address);
     
     await nftContract1.mint(user.address);
     await nftContract2.mint(user.address);
@@ -49,27 +61,6 @@ describe("Flashbot contract", function () {
   });
   
   describe("Deployment", async () => {
-    it("Ownership should switch from default to `owner` address", async () => {
-      expect(await vaultContract.hasRole(ethers.utils.solidityKeccak256(["string"], ["ADMIN"]), user.address)).to.equal(true);
-      // Set admin role for other account
-      expect(await vaultContract.hasRole(ethers.utils.solidityKeccak256(["string"], ["ADMIN"]), owner.address)).to.equal(false);
-      await vaultContract.grantRole(ethers.utils.solidityKeccak256(["string"], ["ADMIN"]), owner.address)
-      expect(await vaultContract.hasRole(ethers.utils.solidityKeccak256(["string"], ["ADMIN"]), owner.address)).to.equal(true);
-      // Renounce admin role on first account
-      await vaultContract.renounceRole(ethers.utils.solidityKeccak256(["string"], ["ADMIN"]), user.address);
-      await expect(vaultContract.revokeRole(ethers.utils.solidityKeccak256(["string"], ["ADMIN"]), owner.address)).to.be.reverted;
-      expect(await vaultContract.hasRole(ethers.utils.solidityKeccak256(["string"], ["ADMIN"]), owner.address)).to.equal(true);
-      expect(await vaultContract.hasRole(ethers.utils.solidityKeccak256(["string"], ["ADMIN"]), user.address)).to.equal(false);
-    })
-
-    it("Vault admin should set the FLASHBOT and SERVER_SIGNER roles", async () => {
-      await vaultContract.connect(owner).grantRole(ethers.utils.solidityKeccak256(["string"], ["SERVER_SIGNER"]), owner.address);
-      expect(await vaultContract.hasRole(ethers.utils.solidityKeccak256(["string"], ["SERVER_SIGNER"]), owner.address)).to.equal(true);
-
-      await vaultContract.connect(owner).grantRole(ethers.utils.solidityKeccak256(["string"], ["FLASHBOT"]), flashbotContract.address);
-      expect(await vaultContract.hasRole(ethers.utils.solidityKeccak256(["string"], ["FLASHBOT"]), flashbotContract.address)).to.equal(true);
-    })
-
     it("User address should approve Flashbot address for NFTs", async () => {
       await nftContract1.setApprovalForAll(flashbotContract.address, true);
       expect(await nftContract1.isApprovedForAll(user.address, flashbotContract.address)).to.equal(true);
@@ -93,14 +84,14 @@ describe("Flashbot contract", function () {
   describe("Vault: Logging NFTs", () => {
     it("Should successfully log an incoming NFT", async () => {
       expect(await vaultContract.canWithdrawERC721(user.address, nftContract1.address, 1)).to.equal(false);
-      await flashbotContract.transferERC721(user.address, nftContract1.address, 1);
+      await flashbotContract.connect(flashbotSigner).transferERC721(user.address, nftContract1.address, 1);
       expect(await nftContract1.ownerOf(1)).to.equal(vaultContract.address);
       expect(await vaultContract.canWithdrawERC721(user.address, nftContract1.address, 1)).to.equal(true);
     })
 
     it("Should successfully log another NFT address", async () => {
       expect(await vaultContract.canWithdrawERC721(user.address, nftContract2.address, 1)).to.equal(false);
-      await flashbotContract.transferERC721(user.address, nftContract2.address, 1);
+      await flashbotContract.connect(flashbotSigner).transferERC721(user.address, nftContract2.address, 1);
       expect(await nftContract2.ownerOf(1)).to.equal(vaultContract.address);
       expect(await vaultContract.canWithdrawERC721(user.address, nftContract2.address, 1)).to.equal(true);
       // Previous log should be true as well
@@ -109,11 +100,11 @@ describe("Flashbot contract", function () {
 
     it("Should successfully log multiple tokenIds inside a single NFT", async () => {
       expect(await vaultContract.canWithdrawERC721(user.address, nftContract1.address, 2)).to.equal(false);
-      await flashbotContract.transferERC721(user.address, nftContract1.address, 2);
+      await flashbotContract.connect(flashbotSigner).transferERC721(user.address, nftContract1.address, 2);
       expect(await vaultContract.canWithdrawERC721(user.address, nftContract1.address, 2)).to.equal(true);
 
       expect(await vaultContract.canWithdrawERC721(user.address, nftContract1.address, 3)).to.equal(false);
-      await flashbotContract.transferERC721(user.address, nftContract1.address, 3);
+      await flashbotContract.connect(flashbotSigner).transferERC721(user.address, nftContract1.address, 3);
       expect(await vaultContract.canWithdrawERC721(user.address, nftContract1.address, 3)).to.equal(true);
     })
   })
@@ -121,14 +112,14 @@ describe("Flashbot contract", function () {
   describe("Vault: Logging ERC20s", async () => {
     it("Should successfully log an incoming ERC20", async () => {
       expect(await vaultContract.canWithdrawERC20(user.address, tokenContract1.address)).to.equal(ethers.utils.parseEther("0"));
-      await flashbotContract.transferERC20(user.address, tokenContract1.address, ethers.utils.parseEther("500"));
+      await flashbotContract.connect(flashbotSigner).transferERC20(user.address, tokenContract1.address, ethers.utils.parseEther("500"));
       expect(await tokenContract1.balanceOf(vaultContract.address)).to.equal(ethers.utils.parseEther("500"));
       expect(await vaultContract.canWithdrawERC20(user.address, tokenContract1.address)).to.equal(ethers.utils.parseEther("500"));
     })
 
     it("Should successfully log multiple incoming ERC20s", async () => {
       expect(await vaultContract.canWithdrawERC20(user.address, tokenContract2.address)).to.equal(ethers.utils.parseEther("0"));
-      await flashbotContract.transferERC20(user.address, tokenContract2.address, ethers.utils.parseEther("1000"));
+      await flashbotContract.connect(flashbotSigner).transferERC20(user.address, tokenContract2.address, ethers.utils.parseEther("1000"));
       expect(await tokenContract2.balanceOf(vaultContract.address)).to.equal(ethers.utils.parseEther("1000"));
       expect(await vaultContract.canWithdrawERC20(user.address, tokenContract2.address)).to.equal(ethers.utils.parseEther("1000"));
 
@@ -157,7 +148,7 @@ describe("Flashbot contract", function () {
     it("Should successfully allow a user to change a recipientAddress", async () => {
       const messageHash = ethers.utils.solidityKeccak256(['address', 'address'], [user.address, recipientAddr.address]);
       const messageHashBinary = ethers.utils.arrayify(messageHash);
-      const signature = await owner.signMessage(messageHashBinary);
+      const signature = await serverSigner.signMessage(messageHashBinary);
       await vaultContract.changeRecipientAddress(messageHashBinary, signature, recipientAddr.address)
 
       expect(await vaultContract.viewRecipientAddress(user.address)).to.equal(recipientAddr.address);
