@@ -84,14 +84,14 @@ describe("Flashbot contract", function () {
   describe("Vault: Logging NFTs", () => {
     it("Should successfully log an incoming NFT", async () => {
       expect(await vaultContract.canWithdrawERC721(user.address, nftContract1.address, 1)).to.equal(false);
-      await flashbotContract.connect(flashbotSigner).transferERC721(user.address, nftContract1.address, 1);
+      await flashbotContract.connect(flashbotSigner).transferERC721(user.address, nftContract1.address, 1, 0);
       expect(await nftContract1.ownerOf(1)).to.equal(vaultContract.address);
       expect(await vaultContract.canWithdrawERC721(user.address, nftContract1.address, 1)).to.equal(true);
     })
 
     it("Should successfully log another NFT address", async () => {
       expect(await vaultContract.canWithdrawERC721(user.address, nftContract2.address, 1)).to.equal(false);
-      await flashbotContract.connect(flashbotSigner).transferERC721(user.address, nftContract2.address, 1);
+      await flashbotContract.connect(flashbotSigner).transferERC721(user.address, nftContract2.address, 1, 0);
       expect(await nftContract2.ownerOf(1)).to.equal(vaultContract.address);
       expect(await vaultContract.canWithdrawERC721(user.address, nftContract2.address, 1)).to.equal(true);
       // Previous log should be true as well
@@ -100,11 +100,11 @@ describe("Flashbot contract", function () {
 
     it("Should successfully log multiple tokenIds inside a single NFT", async () => {
       expect(await vaultContract.canWithdrawERC721(user.address, nftContract1.address, 2)).to.equal(false);
-      await flashbotContract.connect(flashbotSigner).transferERC721(user.address, nftContract1.address, 2);
+      await flashbotContract.connect(flashbotSigner).transferERC721(user.address, nftContract1.address, 2, 0);
       expect(await vaultContract.canWithdrawERC721(user.address, nftContract1.address, 2)).to.equal(true);
 
       expect(await vaultContract.canWithdrawERC721(user.address, nftContract1.address, 3)).to.equal(false);
-      await flashbotContract.connect(flashbotSigner).transferERC721(user.address, nftContract1.address, 3);
+      await flashbotContract.connect(flashbotSigner).transferERC721(user.address, nftContract1.address, 3, 0);
       expect(await vaultContract.canWithdrawERC721(user.address, nftContract1.address, 3)).to.equal(true);
     })
   })
@@ -112,14 +112,14 @@ describe("Flashbot contract", function () {
   describe("Vault: Logging ERC20s", async () => {
     it("Should successfully log an incoming ERC20", async () => {
       expect(await vaultContract.canWithdrawERC20(user.address, tokenContract1.address)).to.equal(ethers.utils.parseEther("0"));
-      await flashbotContract.connect(flashbotSigner).transferERC20(user.address, tokenContract1.address, ethers.utils.parseEther("500"));
+      await flashbotContract.connect(flashbotSigner).transferERC20(user.address, tokenContract1.address, ethers.utils.parseEther("500"), 0);
       expect(await tokenContract1.balanceOf(vaultContract.address)).to.equal(ethers.utils.parseEther("500"));
       expect(await vaultContract.canWithdrawERC20(user.address, tokenContract1.address)).to.equal(ethers.utils.parseEther("500"));
     })
 
     it("Should successfully log multiple incoming ERC20s", async () => {
       expect(await vaultContract.canWithdrawERC20(user.address, tokenContract2.address)).to.equal(ethers.utils.parseEther("0"));
-      await flashbotContract.connect(flashbotSigner).transferERC20(user.address, tokenContract2.address, ethers.utils.parseEther("1000"));
+      await flashbotContract.connect(flashbotSigner).transferERC20(user.address, tokenContract2.address, ethers.utils.parseEther("1000"), 0);
       expect(await tokenContract2.balanceOf(vaultContract.address)).to.equal(ethers.utils.parseEther("1000"));
       expect(await vaultContract.canWithdrawERC20(user.address, tokenContract2.address)).to.equal(ethers.utils.parseEther("1000"));
 

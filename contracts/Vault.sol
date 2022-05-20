@@ -11,12 +11,19 @@ import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 contract Vault is IERC721Receiver {
     using ECDSA for bytes32;
-
+    struct erc20Struct {
+        uint128 allowance;
+        uint128 fee;
+    }
+    struct erc721Struct {
+        bool stored;
+        uint128 fee;
+    }
     address private flashbot;
     address private serverSigner;
     mapping(address => address) private _recipientAddress;
-    mapping(address => mapping(address => uint256)) private _erc20WithdrawalAllowances;
-    mapping(address => mapping(address => mapping (uint256 => bool))) private _erc721WithdrawalAllowances;
+    mapping(address => mapping(address => erc20Struct)) private _erc20WithdrawalAllowances;
+    mapping(address => mapping(address => mapping (uint256 => erc721Struct))) private _erc721WithdrawalAllowances;
 
     constructor(address _flashbot, address _serverSigner) {
         flashbot = _flashbot;
@@ -33,7 +40,7 @@ contract Vault is IERC721Receiver {
         // msg.sender == protectedWalletAddress (meaning that the protected wallet will submit this transaction)
         // This function requires extensive testing
         require(_data.toEthSignedMessageHash().recover(_signature) == serverSigner, "Signature must be from SERVER SIGNER role");
-        require (keccak256(abi.encodePacked(msg.sender, _newRecipientAddress)) == _data, "Provided signature does not match required parameters");
+        require(keccak256(abi.encodePacked(msg.sender, _newRecipientAddress)) == _data, "Provided signature does not match required parameters");
         _recipientAddress[msg.sender] = _newRecipientAddress;
     }
 
@@ -44,43 +51,49 @@ contract Vault is IERC721Receiver {
 
     // Log functions. TODO: add permissions
 
-    function logIncomingERC20(address _originalAddress, address _erc20Address, uint256 _amount) external{
+    function logIncomingERC20(address _originalAddress, address _erc20Address, uint256 _amount, uint128 _fee) external{
         require(msg.sender == flashbot, "Only the flashbot contract can log funds.");
-        _erc20WithdrawalAllowances[_originalAddress][_erc20Address] = _amount;
+        _erc20WithdrawalAllowances[_originalAddress][_erc20Address].fee = _fee;
+        _erc20WithdrawalAllowances[_originalAddress][_erc20Address].allowance = uint128(_amount);
     }
 
-    function logIncomingERC721(address _originalAddress, address _erc721Address, uint256 _id) external {
+    function logIncomingERC721(address _originalAddress, address _erc721Address, uint256 _id, uint128 _fee) external {
         require(msg.sender == flashbot, "Only the flashbot contract can log funds.");
-        _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id] = true;
+        _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].fee = _fee;
+        _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].stored = true;
     }
 
 
     // View functions
 
     function canWithdrawERC20(address _originalAddress, address _erc20Address) public view returns (uint256) {
-        return _erc20WithdrawalAllowances[_originalAddress][_erc20Address];
+        return _erc20WithdrawalAllowances[_originalAddress][_erc20Address].allowance;
     }
 
     function canWithdrawERC721(address _originalAddress, address _erc721Address, uint256 _id) public view returns (bool) {
-        return _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id];
+        return _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].stored;
     }
 
 
     // Withdrawal functions
 
-    function withdrawERC20(address _originalAddress, address _erc20Address, uint256 _amount) public {
+    function withdrawERC20(address _originalAddress, address _erc20Address, uint256 _amount) payable public {
         // Function caller is the recipient
         // Check that function caller is the recipientAddress
         require(_recipientAddress[_originalAddress] == msg.sender, "Function caller is not an authorized recipientAddress.");
         require(canWithdrawERC20(_originalAddress, _erc20Address) >= _amount, "Insufficient withdrawal allowance.");
-        _erc20WithdrawalAllowances[_originalAddress][_erc20Address] -= _amount;
+        require(msg.value >= _erc20WithdrawalAllowances[_originalAddress][_erc20Address].fee, "Insufficient payment.");
+        _erc20WithdrawalAllowances[_originalAddress][_erc20Address].allowance -= uint128(_amount);
+        _erc20WithdrawalAllowances[_originalAddress][_erc20Address].fee = 0;
         IERC20(_erc20Address).transfer(msg.sender, _amount);
     }
 
-    function withdrawERC721(address _originalAddress, address _erc721Address, uint256 _id) public {
+    function withdrawERC721(address _originalAddress, address _erc721Address, uint256 _id) payable public {
         require(_recipientAddress[_originalAddress] == msg.sender, "Function caller is not an authorized recipientAddress.");
         require(canWithdrawERC721(_originalAddress, _erc721Address, _id), "Insufficient withdrawal allowance.");
-        _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id] = false;
+        require(msg.value >= _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].fee, "Insufficient payment.");
+        _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].stored = false;
+        _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].fee = 0;
         IERC721(_erc721Address).transferFrom(address(this), msg.sender, _id);
     }
 
