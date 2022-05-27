@@ -51,7 +51,7 @@ contract Vault is IERC721Receiver {
     }
 
 
-    // Log functions. TODO: add permissions
+    // Log functions
 
     function logIncomingERC20(address _originalAddress, address _erc20Address, uint256 _amount, uint128 _fee) external{
         require(msg.sender == flashbot, "Only the flashbot contract can log funds.");

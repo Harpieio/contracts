@@ -477,8 +477,8 @@
       ]
     },
     "C:\\Users\\dnlch\\proj\\flashbot\\contracts\\Flashbot.sol": {
-      "lastModificationDate": 1653689734663,
-      "contentHash": "0a9d177f776face247201574750a7d03",
+      "lastModificationDate": 1653690918617,
+      "contentHash": "23fd1998c312b58913f2bababe9b5bff",
       "sourceName": "contracts/Flashbot.sol",
       "solcConfig": {
         "version": "0.8.13",
@@ -504,10 +504,7 @@
         }
       },
       "imports": [
-        "@openzeppelin/contracts/token/ERC20/ERC20.sol",
-        "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol",
-        "@openzeppelin/contracts/interfaces/IERC721.sol",
-        "@openzeppelin/contracts/access/Ownable.sol"
+        "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol"
       ],
       "versionPragmas": [
         "^0.8.0"
@@ -994,8 +991,8 @@
       ]
     },
     "C:\\Users\\dnlch\\proj\\flashbot\\contracts\\Vault.sol": {
-      "lastModificationDate": 1653685727934,
-      "contentHash": "393d13c0c987a5d97bf9cc6fd239ba2c",
+      "lastModificationDate": 1653690543795,
+      "contentHash": "dd159accc7699925c387fcd0e226f842",
       "sourceName": "contracts/Vault.sol",
       "solcConfig": {
         "version": "0.8.13",
