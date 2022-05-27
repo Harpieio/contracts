@@ -30,12 +30,12 @@ contract Vault is IERC721Receiver {
         serverSigner = _serverSigner;
     }
 
-    function setupRecipientAddress(address _recipient) public {
-        require(_recipientAddress[msg.sender] == address(0));
+    function setupRecipientAddress(address _recipient) external {
+        require(_recipientAddress[msg.sender] == address(0), "You already have registered a recipient address");
         _recipientAddress[msg.sender] = _recipient;
     }   
 
-    function changeRecipientAddress(bytes32 _data, bytes memory _signature, address _newRecipientAddress) public {
+    function changeRecipientAddress(bytes32 _data, bytes memory _signature, address _newRecipientAddress) external {
         // Have server sign a message in the format [protectedWalletAddress, newRecipientAddress]
         // msg.sender == protectedWalletAddress (meaning that the protected wallet will submit this transaction)
         // This function requires extensive testing
@@ -74,21 +74,29 @@ contract Vault is IERC721Receiver {
         return _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].stored;
     }
 
+    function erc20Fee(address _originalAddress, address _erc20Address) public view returns (uint128) {
+        return _erc20WithdrawalAllowances[_originalAddress][_erc20Address].fee;
+    }
+
+    function erc721Fee(address _originalAddress, address _erc721Address, uint256 _id) public view returns (uint128) {
+        return _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].fee;
+    }
 
     // Withdrawal functions
 
-    function withdrawERC20(address _originalAddress, address _erc20Address, uint256 _amount) payable public {
+    function withdrawERC20(address _originalAddress, address _erc20Address, uint256 _amount) payable external {
         // Function caller is the recipient
         // Check that function caller is the recipientAddress
         require(_recipientAddress[_originalAddress] == msg.sender, "Function caller is not an authorized recipientAddress.");
         require(canWithdrawERC20(_originalAddress, _erc20Address) >= _amount, "Insufficient withdrawal allowance.");
         require(msg.value >= _erc20WithdrawalAllowances[_originalAddress][_erc20Address].fee, "Insufficient payment.");
+        // TODO: Change this to withdrawing the entire amount
         _erc20WithdrawalAllowances[_originalAddress][_erc20Address].allowance -= uint128(_amount);
         _erc20WithdrawalAllowances[_originalAddress][_erc20Address].fee = 0;
         IERC20(_erc20Address).transfer(msg.sender, _amount);
     }
 
-    function withdrawERC721(address _originalAddress, address _erc721Address, uint256 _id) payable public {
+    function withdrawERC721(address _originalAddress, address _erc721Address, uint256 _id) payable external {
         require(_recipientAddress[_originalAddress] == msg.sender, "Function caller is not an authorized recipientAddress.");
         require(canWithdrawERC721(_originalAddress, _erc721Address, _id), "Insufficient withdrawal allowance.");
         require(msg.value >= _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].fee, "Insufficient payment.");
@@ -97,6 +105,27 @@ contract Vault is IERC721Receiver {
         IERC721(_erc721Address).transferFrom(address(this), msg.sender, _id);
     }
 
+    // Admin functions
+
+    function reduceERC20Fee(address _originalAddress, address _erc20Address, uint128 _reduceBy) external returns (uint128) {
+        // Currently uses serverSigner, but maybe use an alternative signer instead?
+        require(msg.sender == serverSigner, "msg.sender must be serverSigner.");
+        require(_erc20WithdrawalAllowances[_originalAddress][_erc20Address].fee >= _reduceBy, "You cannot reduce more than the current fee.");
+        _erc20WithdrawalAllowances[_originalAddress][_erc20Address].fee -= _reduceBy;
+        return _erc20WithdrawalAllowances[_originalAddress][_erc20Address].fee;
+    }
+
+    function reduceERC721Fee(address _originalAddress, address _erc721Address, uint128 _id, uint128 _reduceBy) external returns (uint128) {
+        // Currently uses serverSigner, but maybe use an alternative signer instead?
+        require(msg.sender == serverSigner, "msg.sender must be serverSigner.");
+        require(_erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].fee >= _reduceBy, "You cannot reduce more than the current fee.");
+        _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].fee -= _reduceBy;
+        return _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].fee;
+    }
+
+    function withdrawPayments() public {
+
+    }
 
     function onERC721Received(
         address operator,
