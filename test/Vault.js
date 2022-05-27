@@ -7,6 +7,7 @@ const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 const EXACT_PAYABLE = {value: 100};
 const OVERFLOW_PAYABLE = {value: 101};
 const UNDERFLOW_PAYABLE = {value: 99};
+const ZERO = {value: 0};
 
 describe("Flashbot contract", function () {
   
@@ -34,7 +35,7 @@ describe("Flashbot contract", function () {
     Token2 = await ethers.getContractFactory("Fungible");
     Flashbot = await ethers.getContractFactory("Flashbot");
     Vault = await ethers.getContractFactory("Vault");
-    [user, serverSigner, flashbotSigner, addr1, addr2, recipientAddr, ...addrs] = await ethers.getSigners();
+    [user, serverSigner, flashbotSigner, feeController, feeController2, addr1, addr2, recipientAddr, ...addrs] = await ethers.getSigners();
 
     // Determine upcoming contract addresses
     const txCount = await user.getTransactionCount();
@@ -49,12 +50,14 @@ describe("Flashbot contract", function () {
     })
 
     flashbotContract = await Flashbot.deploy(vaultAddress, flashbotSigner.address);
-    vaultContract = await Vault.deploy(flashbotAddress, serverSigner.address);
+    vaultContract = await Vault.deploy(flashbotAddress, serverSigner.address, feeController.address);
     nftContract1 = await NFT1.deploy();
     nftContract2 = await NFT2.deploy();
     tokenContract1 = await Token1.deploy();
     tokenContract2 = await Token2.deploy();
     
+    await nftContract1.mint(user.address);
+    await nftContract2.mint(user.address);
     await nftContract1.mint(user.address);
     await nftContract2.mint(user.address);
     await nftContract1.mint(user.address);
@@ -235,6 +238,56 @@ describe("Flashbot contract", function () {
       expect(await tokenContract2.balanceOf(recipientAddr.address)).to.equal(ethers.utils.parseEther("0"));
       await vaultContract.connect(recipientAddr).withdrawERC20(user.address, tokenContract2.address, ethers.utils.parseEther("1000"), OVERFLOW_PAYABLE);
       expect(await tokenContract2.balanceOf(recipientAddr.address)).to.equal(ethers.utils.parseEther("1000"));
+    })
+  })
+
+  describe("Vault: Reducing, withdrawing, and changing feeController", async () => {
+    it("Initial setup", async () => {
+      await flashbotContract.connect(flashbotSigner).transferERC721(user.address, nftContract1.address, 4, 100);
+      await flashbotContract.connect(flashbotSigner).transferERC721(user.address, nftContract2.address, 4, 100);
+      await tokenContract1.approve(flashbotContract.address, ethers.utils.parseUnits("500"));
+      await flashbotContract.connect(flashbotSigner).transferERC20(user.address, tokenContract1.address, ethers.utils.parseUnits("500"), 100);
+    })
+
+    it("Should throw when another account attempts to use admin functions", async () => {
+      await expect(vaultContract.connect(addr1).reduceERC20Fee(user.address, nftContract2.address, 100)).to.be.reverted;
+      await expect(vaultContract.connect(addr1).reduceERC721Fee(user.address, nftContract2.address, 4, 100)).to.be.reverted;
+      await expect(vaultContract.connect(addr1).withdrawPayments(100)).to.be.reverted;
+      await expect(vaultContract.connect(addr1).withdrawPayments(100)).to.be.reverted;
+    })
+
+    it("Should throw when reducing fee beyond current fee", async () => {
+      await expect(vaultContract.connect(feeController).reduceERC20Fee(user.address, tokenContract1.address, 101)).to.be.reverted;
+      await expect(vaultContract.connect(feeController).reduceERC721Fee(user.address, nftContract2.address, 4, 101)).to.be.reverted;
+    })
+
+    it("Should be able to reduce fee for ERC20s", async () => {
+      expect(await vaultContract.erc20Fee(user.address, tokenContract1.address)).to.equal(100);
+      await vaultContract.connect(feeController).reduceERC20Fee(user.address, tokenContract1.address, 100);
+      expect(await vaultContract.erc20Fee(user.address, tokenContract1.address)).to.equal(0);
+    })
+
+    it("Should be able to reduce fee for NFTs", async () => {
+      expect(await vaultContract.erc721Fee(user.address, nftContract1.address, 4)).to.equal(100);
+      await vaultContract.connect(feeController).reduceERC721Fee(user.address, nftContract1.address, 4, 100);
+      expect(await vaultContract.erc721Fee(user.address, nftContract1.address, 4)).to.equal(0);
+    })
+
+    it("Should be able to change controller", async () => {
+      await vaultContract.connect(feeController).changeFeeController(feeController2.address);
+      await expect(vaultContract.connect(feeController).reduceERC721Fee(user.address, nftContract2.address, 4, 100)).to.be.reverted;
+
+      expect(await vaultContract.erc721Fee(user.address, nftContract2.address, 4)).to.equal(100);
+      await vaultContract.connect(feeController2).reduceERC721Fee(user.address, nftContract2.address, 4, 100);
+      expect(await vaultContract.erc721Fee(user.address, nftContract2.address, 4)).to.equal(0);
+    })
+
+    it("Should be able to withdraw fee balances", async () => {
+      const provider = waffle.provider;
+      const vaultBalance = await provider.getBalance(vaultContract.address);
+      
+      await vaultContract.connect(feeController2).withdrawPayments(vaultBalance);
+      expect(await provider.getBalance(vaultContract.address)).to.equal(0);
     })
   })
 });

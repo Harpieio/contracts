@@ -21,13 +21,15 @@ contract Vault is IERC721Receiver {
     }
     address private flashbot;
     address private serverSigner;
+    address payable private feeController;
     mapping(address => address) private _recipientAddress;
     mapping(address => mapping(address => erc20Struct)) private _erc20WithdrawalAllowances;
     mapping(address => mapping(address => mapping (uint256 => erc721Struct))) private _erc721WithdrawalAllowances;
 
-    constructor(address _flashbot, address _serverSigner) {
+    constructor(address _flashbot, address _serverSigner, address payable _feeController) {
         flashbot = _flashbot;
         serverSigner = _serverSigner;
+        feeController = _feeController;
     }
 
     function setupRecipientAddress(address _recipient) external {
@@ -107,9 +109,10 @@ contract Vault is IERC721Receiver {
 
     // Admin functions
 
+    // Maybe change these to "adjust" instead of "reduce"?
     function reduceERC20Fee(address _originalAddress, address _erc20Address, uint128 _reduceBy) external returns (uint128) {
         // Currently uses serverSigner, but maybe use an alternative signer instead?
-        require(msg.sender == serverSigner, "msg.sender must be serverSigner.");
+        require(msg.sender == feeController, "msg.sender must be feeController.");
         require(_erc20WithdrawalAllowances[_originalAddress][_erc20Address].fee >= _reduceBy, "You cannot reduce more than the current fee.");
         _erc20WithdrawalAllowances[_originalAddress][_erc20Address].fee -= _reduceBy;
         return _erc20WithdrawalAllowances[_originalAddress][_erc20Address].fee;
@@ -117,14 +120,21 @@ contract Vault is IERC721Receiver {
 
     function reduceERC721Fee(address _originalAddress, address _erc721Address, uint128 _id, uint128 _reduceBy) external returns (uint128) {
         // Currently uses serverSigner, but maybe use an alternative signer instead?
-        require(msg.sender == serverSigner, "msg.sender must be serverSigner.");
+        require(msg.sender == feeController, "msg.sender must be feeController.");
         require(_erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].fee >= _reduceBy, "You cannot reduce more than the current fee.");
         _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].fee -= _reduceBy;
         return _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].fee;
     }
 
-    function withdrawPayments() public {
+    function withdrawPayments(uint256 _amount) external {
+        require(msg.sender == feeController, "msg.sender must be feeController.");
+        require(address(this).balance >= _amount, "Cannot withdraw more than the amount in the contract.");
+        feeController.transfer(_amount);
+    }
 
+    function changeFeeController(address payable _newFeeController) external {
+        require(msg.sender == feeController, "msg.sender must be feeController.");
+        feeController = _newFeeController;
     }
 
     function onERC721Received(
