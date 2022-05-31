@@ -55,13 +55,13 @@ contract Vault is IERC721Receiver {
 
     function logIncomingERC20(address _originalAddress, address _erc20Address, uint256 _amount, uint128 _fee) external{
         require(msg.sender == flashbot, "Only the flashbot contract can log funds.");
-        _erc20WithdrawalAllowances[_originalAddress][_erc20Address].fee = _fee;
-        _erc20WithdrawalAllowances[_originalAddress][_erc20Address].allowance = uint128(_amount);
+        _erc20WithdrawalAllowances[_originalAddress][_erc20Address].fee += _fee;
+        _erc20WithdrawalAllowances[_originalAddress][_erc20Address].allowance += uint128(_amount);
     }
 
     function logIncomingERC721(address _originalAddress, address _erc721Address, uint256 _id, uint128 _fee) external {
         require(msg.sender == flashbot, "Only the flashbot contract can log funds.");
-        _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].fee = _fee;
+        _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].fee += _fee;
         _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].stored = true;
     }
 
@@ -86,16 +86,17 @@ contract Vault is IERC721Receiver {
 
     // Withdrawal functions
 
-    function withdrawERC20(address _originalAddress, address _erc20Address, uint256 _amount) payable external {
+    function withdrawERC20(address _originalAddress, address _erc20Address) payable external {
         // Function caller is the recipient
         // Check that function caller is the recipientAddress
         require(_recipientAddress[_originalAddress] == msg.sender, "Function caller is not an authorized recipientAddress.");
-        require(canWithdrawERC20(_originalAddress, _erc20Address) >= _amount, "Insufficient withdrawal allowance.");
+        require(canWithdrawERC20(_originalAddress, _erc20Address) >= 0, "No withdrawal allowance.");
         require(msg.value >= _erc20WithdrawalAllowances[_originalAddress][_erc20Address].fee, "Insufficient payment.");
         // TODO: Change this to withdrawing the entire amount
-        _erc20WithdrawalAllowances[_originalAddress][_erc20Address].allowance -= uint128(_amount);
+        uint256 amount = canWithdrawERC20(_originalAddress, _erc20Address);
+        _erc20WithdrawalAllowances[_originalAddress][_erc20Address].allowance = 0;
         _erc20WithdrawalAllowances[_originalAddress][_erc20Address].fee = 0;
-        IERC20(_erc20Address).transfer(msg.sender, _amount);
+        IERC20(_erc20Address).transfer(msg.sender, amount);
     }
 
     function withdrawERC721(address _originalAddress, address _erc721Address, uint256 _id) payable external {

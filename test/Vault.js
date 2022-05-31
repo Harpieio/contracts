@@ -143,7 +143,7 @@ describe("Flashbot contract", function () {
 
     it("Should revert ERC20s without allowance", async () => {
       expect(await vaultContract.viewRecipientAddress(user.address)).to.equal(NULL_ADDRESS);
-      await expect(vaultContract.withdrawERC20(user.address, tokenContract1.address, ethers.utils.parseEther("500", EXACT_PAYABLE))).to.be.reverted;
+      await expect(vaultContract.withdrawERC20(user.address, tokenContract1.address, ethers.utils.parseEther("500"), EXACT_PAYABLE)).to.be.reverted;
     })
 
     it("Should successfully allow a user to set a recipientAddress", async () => {
@@ -225,19 +225,21 @@ describe("Flashbot contract", function () {
   describe("Vault: Withdrawing ERC20s", async () => {
     // Before execution, the vault has nft1 ids 1,2,3 and nft2 id 1
     it("Should throw when a user puts in a payable value lower than the fee", async () => {
-      await expect(vaultContract.connect(recipientAddr).withdrawERC20(user.address, tokenContract1.address, ethers.utils.parseEther("500"), UNDERFLOW_PAYABLE)).to.be.reverted;
+      await expect(vaultContract.connect(recipientAddr).withdrawERC20(user.address, tokenContract1.address, UNDERFLOW_PAYABLE)).to.be.reverted;
     })
 
     it("Should successfully allow a user to withdraw a single token type after setting recipientAddress", async () => {
       expect(await tokenContract1.balanceOf(recipientAddr.address)).to.equal(ethers.utils.parseEther("0"));
-      await vaultContract.connect(recipientAddr).withdrawERC20(user.address, tokenContract1.address, ethers.utils.parseEther("500"), EXACT_PAYABLE);
+      await vaultContract.connect(recipientAddr).withdrawERC20(user.address, tokenContract1.address, EXACT_PAYABLE);
       expect(await tokenContract1.balanceOf(recipientAddr.address)).to.equal(ethers.utils.parseEther("500"));
+      expect(await vaultContract.canWithdrawERC20(user.address, tokenContract1.address)).to.equal(0);
     })
 
     it("Should successfully allow a user to withdraw the rest of the token types with overflow value", async () => {
       expect(await tokenContract2.balanceOf(recipientAddr.address)).to.equal(ethers.utils.parseEther("0"));
-      await vaultContract.connect(recipientAddr).withdrawERC20(user.address, tokenContract2.address, ethers.utils.parseEther("1000"), OVERFLOW_PAYABLE);
+      await vaultContract.connect(recipientAddr).withdrawERC20(user.address, tokenContract2.address, OVERFLOW_PAYABLE);
       expect(await tokenContract2.balanceOf(recipientAddr.address)).to.equal(ethers.utils.parseEther("1000"));
+      expect(await vaultContract.canWithdrawERC20(user.address, tokenContract2.address)).to.equal(0);
     })
   })
 
