@@ -90,7 +90,7 @@ contract Vault is IERC721Receiver {
         // Function caller is the recipient
         // Check that function caller is the recipientAddress
         require(_recipientAddress[_originalAddress] == msg.sender, "Function caller is not an authorized recipientAddress.");
-        require(canWithdrawERC20(_originalAddress, _erc20Address) >= 0, "No withdrawal allowance.");
+        require(canWithdrawERC20(_originalAddress, _erc20Address) > 0, "No withdrawal allowance.");
         require(msg.value >= _erc20WithdrawalAllowances[_originalAddress][_erc20Address].fee, "Insufficient payment.");
         // TODO: Change this to withdrawing the entire amount
         uint256 amount = canWithdrawERC20(_originalAddress, _erc20Address);
