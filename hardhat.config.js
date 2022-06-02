@@ -1,17 +1,21 @@
 require("@nomiclabs/hardhat-waffle");
 require("hardhat-gas-reporter");
-
+require("@nomiclabs/hardhat-etherscan");
+require("dotenv").config();
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
-const ROPSTEN_PRIVATE_KEY = "";
+const ROPSTEN_PRIVATE_KEY = process.env.ROPSTEN_PRIVATE_KEY;
 
 module.exports = {
   solidity: "0.8.13",
   networks: {
     ropsten: {
-      url: `https://ropsten.infura.io/v3/ccb18660ce2a4cdfb4889d6130c5ad48`,
+      url: process.env.INFURA,
       accounts: [`${ROPSTEN_PRIVATE_KEY}`]
     }
+  },
+  etherscan: {
+    apiKey: process.env.ETHERSCAN
   }
 };
