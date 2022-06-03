@@ -12,7 +12,7 @@ module.exports = {
   networks: {
     ropsten: {
       url: process.env.INFURA,
-      accounts: [`${ROPSTEN_PRIVATE_KEY}`]
+      accounts: [`${ROPSTEN_PRIVATE_KEY}`, process.env.MULE_PRIVATE_KEY]
     }
   },
   etherscan: {

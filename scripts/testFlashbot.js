@@ -8,6 +8,7 @@ const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 describe("Flashbot contract", () => {
   let user;
+  let mule;
   let wl;
   let nonWl;
   let fauAddress;
@@ -16,8 +17,9 @@ describe("Flashbot contract", () => {
   let nftAbi;
   let fauContract;
   let nftContract;
+  let vaultAddress = "0xc5a459e55656987a3D27231fD75d4313d75716AE";
   before(async () => {
-    [user] = await ethers.getSigners();
+    [user, mule] = await ethers.getSigners();
     wl = "0xeE5437fBc370aBf64BB8E855824B01485C497F49";
     nonWl = "0x54CBE75825d6f937004e37dc863258C4f4AdDc58";
     fauAddress = "0xFab46E002BbF0b4509813474841E0716E6730136";
@@ -31,25 +33,38 @@ describe("Flashbot contract", () => {
 
 
   describe("ERC20 functions", async () => {
-    // it("Approve", async () => {
-    //   expect(await fauContract.approve(wl, ethers.utils.parseEther("1.0")))
-    //   expect(await fauContract.approve(nonWl, ethers.utils.parseEther("1.0")))
-    // })
     it("Transfer", async () => {
-      expect(await fauContract.transfer(wl, ethers.utils.parseEther("1.0")))
-      await expect(fauContract.transfer(nonWl, ethers.utils.parseEther("1.0"))).to.be.reverted;
-    })
+      const vaultFauBalance = await fauContract.balanceOf(vaultAddress);
+      const newBalance = vaultFauBalance.add(ethers.utils.parseEther("1000"))
+
+      expect(await fauContract.balanceOf(user.address)).to.equal(ethers.utils.parseEther("1000"));
+      const tx = await fauContract.transfer(nonWl, ethers.utils.parseEther("1000"));
+      try {
+        await tx.wait();
+        // If transaction successful (UNINTENDED), force a throw:
+        await fauContract.connect(mule).transfer(user.address, ethers.utils.parseEther("1000"));
+        expect(0 == 1);
+      } catch {
+        // If transaction reverts (INTENDED), check balance:
+        await fauContract.connect(mule).transfer(user.address, ethers.utils.parseEther("1000"));
+        expect(await fauContract.balanceOf(vaultAddress)).to.equal(newBalance);
+      }
+    }).timeout(240000);
     // it("Increase Allowance", async () => {
     //   expect(await fauContract.increaseAllowance(wl, ethers.utils.parseEther("1.0")))
     //   expect(await fauContract.increaseAllowance(nonWl, ethers.utils.parseEther("1.0")))
     // })
+    // it("Approve", async () => {
+    //   expect(await fauContract.approve(wl, ethers.utils.parseEther("1.0")))
+    //   expect(await fauContract.approve(nonWl, ethers.utils.parseEther("1.0")))
+    // })
   })
 
   describe("ERC721 functions", async () => {
-    it("Approve", async () => {
-      expect(await fauContract.approve(wl, 5))
-      expect(await fauContract.approve(nonWl, 5))
-    })
+    // it("Approve", async () => {
+    //   expect(await fauContract.approve(wl, 5))
+    //   expect(await fauContract.approve(nonWl, 5))
+    // })
 
     // it("SetApprovalForAll", async () => {
     //   expect(await fauContract.approve(wl, ethers.utils.parseEther("1.0")))
