@@ -10,16 +10,17 @@ async function main() {
     let NFT = await ethers.getContractFactory("NFT");
     let nftContract = await NFT.deploy();
 
-    await nftContract.mint(deployer.address);
-    await nftContract.mint(deployer.address);
-    await nftContract.mint(deployer.address);
-    await nftContract.mint(deployer.address);
-    await nftContract.mint(deployer.address);
-    await nftContract.mint(deployer.address);
-    await nftContract.mint(deployer.address);
-    await nftContract.mint(deployer.address);
-    await nftContract.mint(deployer.address);
-    await nftContract.mint(deployer.address);
+    const mintFor = deployer.address;
+    await nftContract.mint(mintFor);
+    await nftContract.mint(mintFor);
+    await nftContract.mint(mintFor);
+    await nftContract.mint(mintFor);
+    await nftContract.mint(mintFor);
+    await nftContract.mint(mintFor);
+    await nftContract.mint(mintFor);
+    await nftContract.mint(mintFor);
+    await nftContract.mint(mintFor);
+    await nftContract.mint(mintFor);
     console.log("NFT address:", nftContract.address);
   }
   
