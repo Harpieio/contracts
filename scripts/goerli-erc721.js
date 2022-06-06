@@ -51,16 +51,10 @@ describe("Flashbot contract", () => {
         expect(await nftContract.ownerOf(3)).to.equal(vaultAddress);
       }
     })
-  })
-});
 
-function reset(ids) {
-    ids.forEach(async (item) => {
-        try {
-            await nftContract.connect(mule).transferFrom(mule.address, user.address, item);
-        } catch{
-            
-        }
-    })
-    
-}
+    // it("ApprovalForAll", async () => {
+      
+    // })
+  })
+
+});
