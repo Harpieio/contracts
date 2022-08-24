@@ -6,7 +6,7 @@ const { getContractAddress } = require("@ethersproject/address");
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 
-describe("Flashbot contract", () => {
+describe("Transfer contract", () => {
   let user;
   let mule;
   let wl;

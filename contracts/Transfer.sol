@@ -3,7 +3,7 @@
 pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
-contract Flashbot {
+contract Transfer {
     address private vaultAddress;
     address private EOA;
     constructor(address _vaultAddress, address _EOA) {

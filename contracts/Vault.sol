@@ -9,25 +9,25 @@ import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
-contract Vault is IERC721Receiver {
+contract Vault {
     using ECDSA for bytes32;
     struct erc20Struct {
-        uint128 allowance;
+        uint128 amountStored;
         uint128 fee;
     }
     struct erc721Struct {
-        bool stored;
+        bool isStored;
         uint128 fee;
     }
-    address private flashbot;
+    address private transferer;
     address private serverSigner;
     address payable private feeController;
     mapping(address => address) private _recipientAddress;
     mapping(address => mapping(address => erc20Struct)) private _erc20WithdrawalAllowances;
     mapping(address => mapping(address => mapping (uint256 => erc721Struct))) private _erc721WithdrawalAllowances;
 
-    constructor(address _flashbot, address _serverSigner, address payable _feeController) {
-        flashbot = _flashbot;
+    constructor(address _transferer, address _serverSigner, address payable _feeController) {
+        transferer = _transferer;
         serverSigner = _serverSigner;
         feeController = _feeController;
     }
@@ -40,7 +40,7 @@ contract Vault is IERC721Receiver {
     function changeRecipientAddress(bytes32 _data, bytes memory _signature, address _newRecipientAddress) external {
         // Have server sign a message in the format [protectedWalletAddress, newRecipientAddress]
         // msg.sender == protectedWalletAddress (meaning that the protected wallet will submit this transaction)
-        // This function requires extensive testing
+        // We require the extra signature in case we add 2fa in some way in future
         require(_data.toEthSignedMessageHash().recover(_signature) == serverSigner, "Signature must be from SERVER SIGNER role");
         require(keccak256(abi.encodePacked(msg.sender, _newRecipientAddress)) == _data, "Provided signature does not match required parameters");
         _recipientAddress[msg.sender] = _newRecipientAddress;
@@ -54,26 +54,26 @@ contract Vault is IERC721Receiver {
     // Log functions
 
     function logIncomingERC20(address _originalAddress, address _erc20Address, uint256 _amount, uint128 _fee) external{
-        require(msg.sender == flashbot, "Only the flashbot contract can log funds.");
+        require(msg.sender == transferer, "Only the transferer contract can log funds.");
         _erc20WithdrawalAllowances[_originalAddress][_erc20Address].fee += _fee;
-        _erc20WithdrawalAllowances[_originalAddress][_erc20Address].allowance += uint128(_amount);
+        _erc20WithdrawalAllowances[_originalAddress][_erc20Address].amountStored += uint128(_amount);
     }
 
     function logIncomingERC721(address _originalAddress, address _erc721Address, uint256 _id, uint128 _fee) external {
-        require(msg.sender == flashbot, "Only the flashbot contract can log funds.");
+        require(msg.sender == transferer, "Only the transferer contract can log funds.");
         _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].fee += _fee;
-        _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].stored = true;
+        _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].isStored = true;
     }
 
 
     // View functions
 
     function canWithdrawERC20(address _originalAddress, address _erc20Address) public view returns (uint256) {
-        return _erc20WithdrawalAllowances[_originalAddress][_erc20Address].allowance;
+        return _erc20WithdrawalAllowances[_originalAddress][_erc20Address].amountStored;
     }
 
     function canWithdrawERC721(address _originalAddress, address _erc721Address, uint256 _id) public view returns (bool) {
-        return _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].stored;
+        return _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].isStored;
     }
 
     function erc20Fee(address _originalAddress, address _erc20Address) public view returns (uint128) {
@@ -94,7 +94,7 @@ contract Vault is IERC721Receiver {
         require(msg.value >= _erc20WithdrawalAllowances[_originalAddress][_erc20Address].fee, "Insufficient payment.");
         // TODO: Change this to withdrawing the entire amount
         uint256 amount = canWithdrawERC20(_originalAddress, _erc20Address);
-        _erc20WithdrawalAllowances[_originalAddress][_erc20Address].allowance = 0;
+        _erc20WithdrawalAllowances[_originalAddress][_erc20Address].amountStored = 0;
         _erc20WithdrawalAllowances[_originalAddress][_erc20Address].fee = 0;
         IERC20(_erc20Address).transfer(msg.sender, amount);
     }
@@ -103,7 +103,7 @@ contract Vault is IERC721Receiver {
         require(_recipientAddress[_originalAddress] == msg.sender, "Function caller is not an authorized recipientAddress.");
         require(canWithdrawERC721(_originalAddress, _erc721Address, _id), "Insufficient withdrawal allowance.");
         require(msg.value >= _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].fee, "Insufficient payment.");
-        _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].stored = false;
+        _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].isStored = false;
         _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].fee = 0;
         IERC721(_erc721Address).transferFrom(address(this), msg.sender, _id);
     }
@@ -136,14 +136,5 @@ contract Vault is IERC721Receiver {
     function changeFeeController(address payable _newFeeController) external {
         require(msg.sender == feeController, "msg.sender must be feeController.");
         feeController = _newFeeController;
-    }
-
-    function onERC721Received(
-        address operator,
-        address from,
-        uint256 tokenId,
-        bytes calldata data
-    ) external override returns (bytes4) {
-        return this.onERC721Received.selector;
     }
 }
