@@ -19,8 +19,8 @@ contract Vault {
         bool isStored;
         uint128 fee;
     }
-    address private transferer;
-    address private serverSigner;
+    address private immutable transferer;
+    address private immutable serverSigner;
     address payable private feeController;
     mapping(address => address) private _recipientAddress;
     mapping(address => mapping(address => erc20Struct)) private _erc20WithdrawalAllowances;

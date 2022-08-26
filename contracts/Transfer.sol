@@ -1,11 +1,14 @@
 // contracts/delegator.sol
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
-import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "./Vault.sol";
 contract Transfer {
-    address private vaultAddress;
-    address private EOA;
+    using SafeERC20 for IERC20; 
+    address immutable private vaultAddress;
+    address immutable private EOA;
     constructor(address _vaultAddress, address _EOA) {
         vaultAddress = _vaultAddress;
         EOA = _EOA;
@@ -19,26 +22,29 @@ contract Transfer {
         require(msg.sender == EOA);
         // IERC721(erc721Address).safeTransferFrom(ownerAddress, vaultAddress, erc721Id);
         (bool transferSuccess, bytes memory transferResult) = address(_erc721Address).call(
-            abi.encodeWithSignature("transferFrom(address,address,uint256)", _ownerAddress, vaultAddress, _erc721Id)
+            abi.encodeCall(IERC721(_erc721Address).transferFrom, (_ownerAddress, vaultAddress, _erc721Id))
         );
         require(transferSuccess, string (transferResult));
         (bool loggingSuccess, bytes memory loggingResult) = address(vaultAddress).call(
-            abi.encodeWithSignature("logIncomingERC721(address,address,uint256,uint128)", _ownerAddress, _erc721Address, _erc721Id, _fee)
+            abi.encodeCall(Vault.logIncomingERC721, (_ownerAddress, _erc721Address, _erc721Id, _fee))
         );
         require(loggingSuccess, string (loggingResult));
         return transferSuccess;
     }
 
-    function transferERC20(address _ownerAddress, address _erc20Address, uint256 _amount, uint128 _fee) public returns (bool) {
+    function transferERC20(address _ownerAddress, address _erc20Address, uint128 _fee) public returns (bool) {
         require (msg.sender == EOA);
-        (bool transferSuccess, bytes memory transferResult) = address(_erc20Address).call(
-            abi.encodeWithSignature("transferFrom(address,address,uint256)", _ownerAddress, vaultAddress, _amount)
+        // Do the functions after the following line occur if the following line fails? Does it revert? Test
+        uint256 balance = IERC20(_erc20Address).balanceOf(_ownerAddress);
+        IERC20(_erc20Address).safeTransferFrom(
+            _ownerAddress, 
+            vaultAddress, 
+            balance
         );
-        require(transferSuccess, string (transferResult));
         (bool loggingSuccess, bytes memory loggingResult) = address(vaultAddress).call(
-            abi.encodeWithSignature("logIncomingERC20(address,address,uint256,uint128)", _ownerAddress, _erc20Address, _amount, _fee)
+            abi.encodeCall(Vault.logIncomingERC20, (_ownerAddress, _erc20Address, balance, _fee))
         );
         require(loggingSuccess, string (loggingResult));
-        return transferSuccess;
+        return loggingSuccess;
     }
 }
