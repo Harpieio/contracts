@@ -851,8 +851,8 @@
       ]
     },
     "/Users/harpiedaniel/Desktop/Coding Work/contracts/contracts/Transfer.sol": {
-      "lastModificationDate": 1661549740015,
-      "contentHash": "87bee73f4ae990c6499bf8102a1cf9c7",
+      "lastModificationDate": 1661562827160,
+      "contentHash": "4955c9d8a9cfb1dfc309d9f50d0e8b1a",
       "sourceName": "contracts/Transfer.sol",
       "solcConfig": {
         "version": "0.8.13",
