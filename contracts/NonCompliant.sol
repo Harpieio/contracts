@@ -9,6 +9,4 @@ contract NonCompliant is ERC20 {
     constructor() ERC20("DevToken", "DVT"){
         _mint(msg.sender,1000*10**18);
     }
-
-    override 
 }

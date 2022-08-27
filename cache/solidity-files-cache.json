@@ -665,8 +665,8 @@
       ]
     },
     "/Users/harpiedaniel/Desktop/Coding Work/contracts/contracts/Vault.sol": {
-      "lastModificationDate": 1661481037615,
-      "contentHash": "e6ed9d1a58c0b012b439b7f3d54fbe09",
+      "lastModificationDate": 1661564862486,
+      "contentHash": "d6e60bd757328fde18e0b949510edd23",
       "sourceName": "contracts/Vault.sol",
       "solcConfig": {
         "version": "0.8.13",
@@ -925,6 +925,44 @@
       ],
       "artifacts": [
         "SafeERC20"
+      ]
+    },
+    "/Users/harpiedaniel/Desktop/Coding Work/contracts/contracts/NonCompliant.sol": {
+      "lastModificationDate": 1661564490257,
+      "contentHash": "a10dc2b06ad0250175ef2158fee06b3c",
+      "sourceName": "contracts/NonCompliant.sol",
+      "solcConfig": {
+        "version": "0.8.13",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/token/ERC20/ERC20.sol",
+        "@openzeppelin/contracts/utils/Counters.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "NonCompliant"
       ]
     }
   }

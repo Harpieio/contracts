@@ -25,6 +25,7 @@ contract Vault {
     mapping(address => address) private _recipientAddress;
     mapping(address => mapping(address => erc20Struct)) private _erc20WithdrawalAllowances;
     mapping(address => mapping(address => mapping (uint256 => erc721Struct))) private _erc721WithdrawalAllowances;
+    mapping(bytes32 => bool) private _isChangeRecipientMessageConsumed;
 
     constructor(address _transferer, address _serverSigner, address payable _feeController) {
         transferer = _transferer;
@@ -37,12 +38,15 @@ contract Vault {
         _recipientAddress[msg.sender] = _recipient;
     }   
 
-    function changeRecipientAddress(bytes32 _data, bytes memory _signature, address _newRecipientAddress) external {
+    function changeRecipientAddress(bytes32 _data, bytes memory _signature, address _newRecipientAddress, uint256 expiry) external {
         // Have server sign a message in the format [protectedWalletAddress, newRecipientAddress]
         // msg.sender == protectedWalletAddress (meaning that the protected wallet will submit this transaction)
         // We require the extra signature in case we add 2fa in some way in future
         require(_data.toEthSignedMessageHash().recover(_signature) == serverSigner, "Signature must be from SERVER SIGNER role");
-        require(keccak256(abi.encodePacked(msg.sender, _newRecipientAddress)) == _data, "Provided signature does not match required parameters");
+        require(_isChangeRecipientMessageConsumed[_data] == false, "Already used this signature");
+        require(keccak256(abi.encodePacked(msg.sender, _newRecipientAddress, expiry)) == _data, "Provided signature does not match required parameters");
+        require(block.timestamp <= expiry, "Signature expired");
+        _isChangeRecipientMessageConsumed[_data] = true;
         _recipientAddress[msg.sender] = _newRecipientAddress;
     }
 
