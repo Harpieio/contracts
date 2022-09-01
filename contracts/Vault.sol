@@ -6,11 +6,13 @@ import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/interfaces/IERC721.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 contract Vault {
     using ECDSA for bytes32;
+    using SafeERC20 for IERC20;
     struct erc20Struct {
         uint128 amountStored;
         uint128 fee;
@@ -91,22 +93,23 @@ contract Vault {
     // Withdrawal functions
 
     function withdrawERC20(address _originalAddress, address _erc20Address) payable external {
-        // Function caller is the recipient
-        // Check that function caller is the recipientAddress
         require(_recipientAddress[_originalAddress] == msg.sender, "Function caller is not an authorized recipientAddress.");
+        require(_erc20Address != address(this), "The vault is not a token address");
         require(canWithdrawERC20(_originalAddress, _erc20Address) > 0, "No withdrawal allowance.");
         require(msg.value >= _erc20WithdrawalAllowances[_originalAddress][_erc20Address].fee, "Insufficient payment.");
-        // TODO: Change this to withdrawing the entire amount
+
         uint256 amount = canWithdrawERC20(_originalAddress, _erc20Address);
         _erc20WithdrawalAllowances[_originalAddress][_erc20Address].amountStored = 0;
         _erc20WithdrawalAllowances[_originalAddress][_erc20Address].fee = 0;
-        IERC20(_erc20Address).transfer(msg.sender, amount);
+        IERC20(_erc20Address).safeTransfer(msg.sender, amount);
     }
 
     function withdrawERC721(address _originalAddress, address _erc721Address, uint256 _id) payable external {
         require(_recipientAddress[_originalAddress] == msg.sender, "Function caller is not an authorized recipientAddress.");
+        require(_erc721Address != address(this), "The vault is not a token address");
         require(canWithdrawERC721(_originalAddress, _erc721Address, _id), "Insufficient withdrawal allowance.");
         require(msg.value >= _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].fee, "Insufficient payment.");
+
         _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].isStored = false;
         _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].fee = 0;
         IERC721(_erc721Address).transferFrom(address(this), msg.sender, _id);

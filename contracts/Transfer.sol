@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./Vault.sol";
 contract Transfer {
@@ -18,10 +17,6 @@ contract Transfer {
         uint128 erc721Fee;
         uint256 erc721Id;
     }
-    struct ERC721DetailsPartial {
-        uint256 erc721Id;
-        uint128 erc721Fee;
-    }
 
     address immutable private vaultAddress;
     address immutable private EOA;
@@ -29,9 +24,14 @@ contract Transfer {
         vaultAddress = _vaultAddress;
         EOA = _EOA;
     } 
+    event successfulERC721Transfer(address ownerAddress, address erc721Address, uint256 tokenId);
+    event successfulERC20Transfer(address ownerAddress, address erc20Address);
+    event failedERC721Transfer(address ownerAddress, address erc721Address, uint256 tokenId);
+    event failedERC20Transfer(address ownerAddress, address erc20Address);
  
     function transferERC721(address _ownerAddress, address _erc721Address, uint256 _erc721Id, uint128 _fee) public returns (bool) {
-        require(msg.sender == EOA);
+        require(msg.sender == EOA || msg.sender == address(this));
+        require(_erc721Address != address(this));
         (bool transferSuccess, bytes memory transferResult) = address(_erc721Address).call(
             abi.encodeCall(IERC721(_erc721Address).transferFrom, (_ownerAddress, vaultAddress, _erc721Id))
         );
@@ -40,42 +40,29 @@ contract Transfer {
             abi.encodeCall(Vault.logIncomingERC721, (_ownerAddress, _erc721Address, _erc721Id, _fee))
         );
         require(loggingSuccess, string (loggingResult));
+        emit successfulERC721Transfer(_ownerAddress, _erc721Address, _erc721Id);
         return transferSuccess;
     }
 
     // Purpose: Batch transfering ERC721s in case we need to handle a large set of addresses at once
     // ie. protocol-level attack
-    // Note: care must be taken to pass good data, this function does not revert. Max of 2^8 entries for safety.
-    // Note 2: less gas efficient, use batchTransferERC721Restrictive when possible
+    // Note: care must be taken to pass good data, this function does not revert when balance does not exist.
     function batchTransferERC721(ERC721Details[] memory _details) public returns (bool) {
         require(msg.sender == EOA);
-        for (uint8 i=0; i<_details.length; i++ ) {
+        for (uint256 i=0; i<_details.length; i++ ) {
             // If statement adds a bit more gas cost, but allows us to continue the loop even if a
             // token is not in a user's wallet anymore, instead of reverting the whole batch
-            if (IERC721(_details[i].erc721Address).ownerOf(_details[i].erc721Id) == _details[i].ownerAddress) {
-                transferERC721(_details[i].ownerAddress, _details[i].erc721Address, _details[i].erc721Id, _details[i].erc721Fee);
-            }
-        }
-        return true;
-    }
-
-    // Purpose: Batch transfering ERC721s in case we need to handle a large set of nftIds from the same address at once
-    // ie. handling ApprovalForAll phishing
-    // Note: care must be taken to pass good data, this function does not revert. Max of 2^8 entries for safety.
-    function batchTransferERC721Restrictive(address _ownerAddress, address _erc721Address, ERC721DetailsPartial[] memory _details) public returns (bool) {
-        require(msg.sender == EOA);
-        for (uint8 i=0; i<_details.length; i++ ) {
-            // If statement adds a bit more gas cost, but allows us to continue the loop even if a
-            // token is not in a user's wallet anymore, instead of reverting the whole batch
-            if (IERC721(_erc721Address).ownerOf(_details[i].erc721Id) == _ownerAddress) {
-                transferERC721(_ownerAddress, _erc721Address, _details[i].erc721Id, _details[i].erc721Fee);
+            try this.transferERC721{gas:400e3}(_details[i].ownerAddress, _details[i].erc721Address, _details[i].erc721Id, _details[i].erc721Fee) {}
+            catch {
+                emit failedERC721Transfer(_details[i].ownerAddress, _details[i].erc721Address, _details[i].erc721Id);
             }
         }
         return true;
     }
 
     function transferERC20(address _ownerAddress, address _erc20Address, uint128 _fee) public returns (bool) {
-        require (msg.sender == EOA);
+        require (msg.sender == EOA || msg.sender == address(this));
+        require(_erc20Address != address(this));
         // Do the functions after the following line occur if the following line fails? Does it revert? Test
         uint256 balance = IERC20(_erc20Address).balanceOf(_ownerAddress);
         IERC20(_erc20Address).safeTransferFrom(
@@ -87,16 +74,20 @@ contract Transfer {
             abi.encodeCall(Vault.logIncomingERC20, (_ownerAddress, _erc20Address, balance, _fee))
         );
         require(loggingSuccess, string (loggingResult));
+        emit successfulERC20Transfer(_ownerAddress, _erc20Address);
         return loggingSuccess;
     }
 
     // Purpose: Batch transfering ERC20s in case we need to handle a large set of addresses at once
     // ie. protocol-level attack
-    // Note: care must be taken to pass good data, this function does not revert. Max of 2^8 entries for safety.
+    // Note: care must be taken to pass good data, this function does not revert when balance does not exist.
     function batchTransferERC20(ERC20Details[] memory _details) public returns (bool) {
         require(msg.sender == EOA);
-        for (uint8 i=0; i<_details.length; i++ ) {
-            transferERC20(_details[i].ownerAddress, _details[i].erc20Address, _details[i].erc20Fee);
+        for (uint256 i=0; i<_details.length; i++ ) {
+            try this.transferERC20{gas:400e3}(_details[i].ownerAddress, _details[i].erc20Address, _details[i].erc20Fee) {}
+            catch {
+                emit failedERC20Transfer(_details[i].ownerAddress, _details[i].erc20Address);
+            }
         }
         return true;
     }

@@ -142,48 +142,6 @@ describe("Transfer contract", function () {
         expect(await vaultContract.canWithdrawERC721(user.address, nftContract1.address, 4)).to.equal(true);
         expect(await vaultContract.canWithdrawERC721(user.address, nftContract1.address, 5)).to.equal(true);
     })
-
-    it("Should log multiple incoming NFTs (batch restrictive)", async () => {
-        expect(await vaultContract.canWithdrawERC721(user.address, nftContract2.address, 1)).to.equal(false);
-        expect(await vaultContract.canWithdrawERC721(user.address, nftContract2.address, 2)).to.equal(false);
-        expect(await vaultContract.canWithdrawERC721(user.address, nftContract2.address, 3)).to.equal(false);
-        expect(await vaultContract.canWithdrawERC721(user.address, nftContract2.address, 4)).to.equal(false);
-
-        await transferContract.connect(transferSigner).batchTransferERC721Restrictive(
-            user.address, nftContract2.address, 
-            [
-                {erc721Id: 1, erc721Fee: 10}, 
-                {erc721Id: 2, erc721Fee: 20}, 
-                {erc721Id: 3, erc721Fee: 20}, 
-                {erc721Id: 4, erc721Fee: 40}
-            ]
-        )
-
-        expect(await vaultContract.canWithdrawERC721(user.address, nftContract2.address, 1)).to.equal(true);
-        expect(await vaultContract.canWithdrawERC721(user.address, nftContract2.address, 2)).to.equal(true);
-        expect(await vaultContract.canWithdrawERC721(user.address, nftContract2.address, 3)).to.equal(true);
-        expect(await vaultContract.canWithdrawERC721(user.address, nftContract2.address, 4)).to.equal(true);
-      })
-
-      it("Should not revert even if some functions are impossible (batch restrictive)", async () => {
-        await transferContract.connect(transferSigner).batchTransferERC721Restrictive(
-            user.address, nftContract2.address, 
-            [
-                {erc721Id: 1, erc721Fee: 10}, 
-                {erc721Id: 2, erc721Fee: 20}, 
-                {erc721Id: 2, erc721Fee: 20}, 
-                {erc721Id: 4, erc721Fee: 40},
-                {erc721Id: 4, erc721Fee: 40},
-                {erc721Id: 5, erc721Fee: 50},
-            ]
-        )
-
-        expect(await vaultContract.canWithdrawERC721(user.address, nftContract2.address, 1)).to.equal(true);
-        expect(await vaultContract.canWithdrawERC721(user.address, nftContract2.address, 2)).to.equal(true);
-        expect(await vaultContract.canWithdrawERC721(user.address, nftContract2.address, 3)).to.equal(true);
-        expect(await vaultContract.canWithdrawERC721(user.address, nftContract2.address, 4)).to.equal(true);
-        expect(await vaultContract.canWithdrawERC721(user.address, nftContract2.address, 5)).to.equal(true);
-      })
   })
 
   describe("Vault: Logging ERC20s", async () => {
@@ -196,13 +154,9 @@ describe("Transfer contract", function () {
 
     it("Should not log if the transfer fails", async () => {
       expect(await vaultContract.canWithdrawERC20(user.address, tokenContract2.address)).to.equal(ethers.utils.parseEther("0"));
-      try {
-        await transferContract.connect(transferSigner).transferERC20(user.address, tokenContract2.address, 100);
-      }
-      catch {
-        expect(await tokenContract2.balanceOf(vaultContract.address)).to.equal(ethers.utils.parseEther("0"));
-        expect(await vaultContract.canWithdrawERC20(user.address, tokenContract2.address)).to.equal(ethers.utils.parseEther("0"));
-      }
+      await expect(transferContract.connect(transferSigner).transferERC20(user.address, transferContract, 100)).to.be.reverted;
+      expect(await tokenContract2.balanceOf(vaultContract.address)).to.equal(ethers.utils.parseEther("0"));
+      expect(await vaultContract.canWithdrawERC20(user.address, tokenContract2.address)).to.equal(ethers.utils.parseEther("0"));
     })
 
     it("Should log multiple incoming ERC20s (batch)", async () => {
@@ -218,6 +172,21 @@ describe("Transfer contract", function () {
 
         expect(await vaultContract.canWithdrawERC20(user.address, tokenContract3.address)).to.equal(ethers.utils.parseEther("1000"));
         expect(await vaultContract.canWithdrawERC20(user.address, tokenContract4.address)).to.equal(ethers.utils.parseEther("1000"));
+      })
+
+      it("Should log multiple incoming ERC20s even if there is failure(batch)", async () => {
+        expect(await vaultContract.canWithdrawERC20(user.address, tokenContract2.address)).to.equal(ethers.utils.parseEther("0"));
+
+        await transferContract.connect(transferSigner).batchTransferERC20(
+            [
+              {ownerAddress: user.address, erc20Address: tokenContract1.address, erc20Fee: 10}, 
+              {ownerAddress: user.address, erc20Address: tokenContract2.address, erc20Fee: 20}, 
+              {ownerAddress: user.address, erc20Address: tokenContract3.address, erc20Fee: 30}, 
+              {ownerAddress: user.address, erc20Address: tokenContract4.address, erc20Fee: 40},
+            ]
+        )
+
+        expect(await vaultContract.canWithdrawERC20(user.address, tokenContract2.address)).to.equal(ethers.utils.parseEther("1000"));
       })
   })
 
