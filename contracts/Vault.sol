@@ -10,6 +10,10 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
+
+// This contract is designed to hold ERC20s and ERC721s from user wallets and allow them to withdraw them.
+// Users will have to pay a designated fee in order to withdraw their ERC20s and ERC721s.
+// In case we need to reduce fees for each user, we have reduceFee functions we can call. 
 contract Vault {
     using ECDSA for bytes32;
     using SafeERC20 for IERC20;
@@ -35,20 +39,23 @@ contract Vault {
         feeController = _feeController;
     }
 
+    // Allow users to set up a recipient address for collecting stored assets.
     function setupRecipientAddress(address _recipient) external {
         require(_recipientAddress[msg.sender] == address(0), "You already have registered a recipient address");
         _recipientAddress[msg.sender] = _recipient;
     }   
 
-    function changeRecipientAddress(bytes32 _data, bytes memory _signature, address _newRecipientAddress, uint256 expiry) external {
-        // Have server sign a message in the format [protectedWalletAddress, newRecipientAddress]
+    // Allow users to change their recipient address. Requires a signature from our serverSigner
+    // to allow this transaction to fire.
+    function changeRecipientAddress(bytes memory _signature, address _newRecipientAddress, uint256 expiry) external {
+        // Have server sign a message in the format [protectedWalletAddress, newRecipientAddress, exp, vaultAddress]
         // msg.sender == protectedWalletAddress (meaning that the protected wallet will submit this transaction)
         // We require the extra signature in case we add 2fa in some way in future
-        require(_data.toEthSignedMessageHash().recover(_signature) == serverSigner, "Signature must be from SERVER SIGNER role");
-        require(_isChangeRecipientMessageConsumed[_data] == false, "Already used this signature");
-        require(keccak256(abi.encodePacked(msg.sender, _newRecipientAddress, expiry)) == _data, "Provided signature does not match required parameters");
+        bytes32 data = keccak256(abi.encodePacked(msg.sender, _newRecipientAddress, expiry, address(this)));
+        require(data.toEthSignedMessageHash().recover(_signature) == serverSigner, "Invalid signature. Signature source may be incorrect, or a provided parameter is invalid");
         require(block.timestamp <= expiry, "Signature expired");
-        _isChangeRecipientMessageConsumed[_data] = true;
+        require(_isChangeRecipientMessageConsumed[data] == false, "Already used this signature");
+        _isChangeRecipientMessageConsumed[data] = true;
         _recipientAddress[msg.sender] = _newRecipientAddress;
     }
 
@@ -57,8 +64,7 @@ contract Vault {
     }
 
 
-    // Log functions
-
+    // Log functions fire when the vault receives an ERC20 or ER721 from Transfer.sol
     function logIncomingERC20(address _originalAddress, address _erc20Address, uint256 _amount, uint128 _fee) external{
         require(msg.sender == transferer, "Only the transferer contract can log funds.");
         _erc20WithdrawalAllowances[_originalAddress][_erc20Address].fee += _fee;
@@ -73,7 +79,6 @@ contract Vault {
 
 
     // View functions
-
     function canWithdrawERC20(address _originalAddress, address _erc20Address) public view returns (uint256) {
         return _erc20WithdrawalAllowances[_originalAddress][_erc20Address].amountStored;
     }
@@ -90,8 +95,7 @@ contract Vault {
         return _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].fee;
     }
 
-    // Withdrawal functions
-
+    // Withdrawal functions allow users to withdraw their assets after paying the ETH withdrawal fee
     function withdrawERC20(address _originalAddress, address _erc20Address) payable external {
         require(_recipientAddress[_originalAddress] == msg.sender, "Function caller is not an authorized recipientAddress.");
         require(_erc20Address != address(this), "The vault is not a token address");
@@ -115,11 +119,8 @@ contract Vault {
         IERC721(_erc721Address).transferFrom(address(this), msg.sender, _id);
     }
 
-    // Admin functions
-
-    // Maybe change these to "adjust" instead of "reduce"?
+    // Fee functions
     function reduceERC20Fee(address _originalAddress, address _erc20Address, uint128 _reduceBy) external returns (uint128) {
-        // Currently uses serverSigner, but maybe use an alternative signer instead?
         require(msg.sender == feeController, "msg.sender must be feeController.");
         require(_erc20WithdrawalAllowances[_originalAddress][_erc20Address].fee >= _reduceBy, "You cannot reduce more than the current fee.");
         _erc20WithdrawalAllowances[_originalAddress][_erc20Address].fee -= _reduceBy;
@@ -127,7 +128,6 @@ contract Vault {
     }
 
     function reduceERC721Fee(address _originalAddress, address _erc721Address, uint128 _id, uint128 _reduceBy) external returns (uint128) {
-        // Currently uses serverSigner, but maybe use an alternative signer instead?
         require(msg.sender == feeController, "msg.sender must be feeController.");
         require(_erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].fee >= _reduceBy, "You cannot reduce more than the current fee.");
         _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].fee -= _reduceBy;

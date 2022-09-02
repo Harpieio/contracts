@@ -4,6 +4,10 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./Vault.sol";
+
+// This contract is designed to move ERC20s and ERC721s from user wallets into the noncustodial Vault contract.
+// It is designed to receive Approvals for users, and a server-side EOA will call the functions when we
+// detect malicious transactions.
 contract Transfer {
     using SafeERC20 for IERC20; 
     struct ERC20Details {
