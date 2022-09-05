@@ -1,15 +1,10 @@
 // contracts/delegator.sol
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/interfaces/IERC721.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "hardhat/console.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
 
 // This contract is designed to hold ERC20s and ERC721s from user wallets and allow them to withdraw them.
 // Users will have to pay a designated fee in order to withdraw their ERC20s and ERC721s.
