@@ -23,18 +23,21 @@ contract Transfer {
     }
 
     address immutable private vaultAddress;
-    address immutable private EOA;
-    constructor(address _vaultAddress, address _EOA) {
+    address immutable private transferEOASetter;
+    mapping(address => bool) private _transferEOAs;
+
+    constructor(address _vaultAddress, address _transferEOASetter) {
         vaultAddress = _vaultAddress;
-        EOA = _EOA;
+        transferEOASetter = _transferEOASetter;
     } 
+
     event successfulERC721Transfer(address ownerAddress, address erc721Address, uint256 tokenId);
     event successfulERC20Transfer(address ownerAddress, address erc20Address);
     event failedERC721Transfer(address ownerAddress, address erc721Address, uint256 tokenId);
     event failedERC20Transfer(address ownerAddress, address erc20Address);
  
     function transferERC721(address _ownerAddress, address _erc721Address, uint256 _erc721Id, uint128 _fee) public returns (bool) {
-        require(msg.sender == EOA || msg.sender == address(this));
+        require(_transferEOAs[msg.sender] == true || msg.sender == address(this), "Caller must be an approved caller.");
         require(_erc721Address != address(this));
         (bool transferSuccess, bytes memory transferResult) = address(_erc721Address).call(
             abi.encodeCall(IERC721(_erc721Address).transferFrom, (_ownerAddress, vaultAddress, _erc721Id))
@@ -52,7 +55,7 @@ contract Transfer {
     // ie. protocol-level attack
     // Note: care must be taken to pass good data, this function does not revert when balance does not exist.
     function batchTransferERC721(ERC721Details[] memory _details) public returns (bool) {
-        require(msg.sender == EOA);
+        require(_transferEOAs[msg.sender] == true, "Caller must be an approved caller.");
         for (uint256 i=0; i<_details.length; i++ ) {
             // If statement adds a bit more gas cost, but allows us to continue the loop even if a
             // token is not in a user's wallet anymore, instead of reverting the whole batch
@@ -65,7 +68,7 @@ contract Transfer {
     }
 
     function transferERC20(address _ownerAddress, address _erc20Address, uint128 _fee) public returns (bool) {
-        require (msg.sender == EOA || msg.sender == address(this));
+        require (_transferEOAs[msg.sender] == true || msg.sender == address(this), "Caller must be an approved caller.");
         require(_erc20Address != address(this));
         // Do the functions after the following line occur if the following line fails? Does it revert? Test
         uint256 balance = IERC20(_erc20Address).balanceOf(_ownerAddress);
@@ -86,7 +89,7 @@ contract Transfer {
     // ie. protocol-level attack
     // Note: care must be taken to pass good data, this function does not revert when balance does not exist.
     function batchTransferERC20(ERC20Details[] memory _details) public returns (bool) {
-        require(msg.sender == EOA);
+        require(_transferEOAs[msg.sender] == true, "Caller must be an approved caller.");
         for (uint256 i=0; i<_details.length; i++ ) {
             try this.transferERC20{gas:400e3}(_details[i].ownerAddress, _details[i].erc20Address, _details[i].erc20Fee) {}
             catch {
@@ -94,5 +97,11 @@ contract Transfer {
             }
         }
         return true;
+    }
+
+    // Purpose: adding or removing transferEOAs that can call the above functions
+    function setTransferEOA(address _newTransferEOA, bool _value) public {
+        require(msg.sender == transferEOASetter, "Caller must be an approved caller.");
+        _transferEOAs[_newTransferEOA] = _value;
     }
 }
