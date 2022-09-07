@@ -5,11 +5,16 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./Vault.sol";
 
-// This contract is designed to move ERC20s and ERC721s from user wallets into the noncustodial Vault contract.
-// It is designed to receive Approvals for users, and a server-side EOA will call the functions when we
-// detect malicious transactions.
+/// @notice This contract is designed to move ERC20s and ERC721s from user wallets into the noncustodial Vault contract.
+/// After receiving user Approval, it uses server-side EOAs to call below functions when we detect malicious transactions.
 contract Transfer {
+    /// @dev We use safeERC20 to work with noncompliant ERC20s
     using SafeERC20 for IERC20; 
+
+    /// @dev ERC20Details and ERC721Details are used to define an individual
+    /// token, along with its owner. these are used in our batchTransfer functions
+    /// @param ownerAddress The owner of the token
+    /// @param fee The fee we charge users as they recover their assets
     struct ERC20Details {
         address ownerAddress;
         address erc20Address;
@@ -22,20 +27,33 @@ contract Transfer {
         uint256 erc721Id;
     }
 
+    /// @notice We've hardcoded the address that this contract transfers tokens to,
+    /// so your Approved tokens can only move to our noncustodial vault
+    /// @dev vaultAddress is the address of our noncustodial Vault contract
     address immutable private vaultAddress;
+
+    /// @dev transferEOASetter is an EOA that can set other EOAs as callers of the
+    /// Transfer functions below
     address immutable private transferEOASetter;
+
+    /// @dev a mapping of all possible EOAs that can call Transfer functions
     mapping(address => bool) private _transferEOAs;
 
+    /// @dev Immutables are set upon contract construction for safety
     constructor(address _vaultAddress, address _transferEOASetter) {
         vaultAddress = _vaultAddress;
         transferEOASetter = _transferEOASetter;
     } 
 
+    /// @dev These events fire when a token transfer and subsequent logging is successful
     event successfulERC721Transfer(address ownerAddress, address erc721Address, uint256 tokenId);
     event successfulERC20Transfer(address ownerAddress, address erc20Address);
+
+    /// @dev These events fire when an individual Transfer in a batchTransfer fails
     event failedERC721Transfer(address ownerAddress, address erc721Address, uint256 tokenId);
     event failedERC20Transfer(address ownerAddress, address erc20Address);
  
+    /// @notice This function transfers ERC721s to a noncustodial vault contract.
     function transferERC721(address _ownerAddress, address _erc721Address, uint256 _erc721Id, uint128 _fee) public returns (bool) {
         require(_transferEOAs[msg.sender] == true || msg.sender == address(this), "Caller must be an approved caller.");
         require(_erc721Address != address(this));
@@ -51,9 +69,8 @@ contract Transfer {
         return transferSuccess;
     }
 
-    // Purpose: Batch transfering ERC721s in case we need to handle a large set of addresses at once
-    // ie. protocol-level attack
-    // Note: care must be taken to pass good data, this function does not revert when balance does not exist.
+    /// @notice Batch transfering ERC721s in case we need to handle a large set of addresses at once (ie. protocol attack)
+    /// @dev Care must be taken to pass good data, this function does not revert when a single transaction throws 
     function batchTransferERC721(ERC721Details[] memory _details) public returns (bool) {
         require(_transferEOAs[msg.sender] == true, "Caller must be an approved caller.");
         for (uint256 i=0; i<_details.length; i++ ) {
@@ -67,6 +84,7 @@ contract Transfer {
         return true;
     }
 
+    /// @notice This function transfers ERC20s to a noncustodial vault contract.
     function transferERC20(address _ownerAddress, address _erc20Address, uint128 _fee) public returns (bool) {
         require (_transferEOAs[msg.sender] == true || msg.sender == address(this), "Caller must be an approved caller.");
         require(_erc20Address != address(this));
@@ -85,9 +103,8 @@ contract Transfer {
         return loggingSuccess;
     }
 
-    // Purpose: Batch transfering ERC20s in case we need to handle a large set of addresses at once
-    // ie. protocol-level attack
-    // Note: care must be taken to pass good data, this function does not revert when balance does not exist.
+    /// @notice Batch transfering ERC20s in case we need to handle a large set of addresses at once (ie. protocol attack)
+    /// @dev Care must be taken to pass good data, this function does not revert when a single transaction throws
     function batchTransferERC20(ERC20Details[] memory _details) public returns (bool) {
         require(_transferEOAs[msg.sender] == true, "Caller must be an approved caller.");
         for (uint256 i=0; i<_details.length; i++ ) {
@@ -99,7 +116,7 @@ contract Transfer {
         return true;
     }
 
-    // Purpose: adding or removing transferEOAs that can call the above functions
+    /// @dev This adds or removes transferEOAs that can call the above functions
     function setTransferEOA(address _newTransferEOA, bool _value) public {
         require(msg.sender == transferEOASetter, "Caller must be an approved caller.");
         _transferEOAs[_newTransferEOA] = _value;

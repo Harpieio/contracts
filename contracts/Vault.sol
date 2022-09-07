@@ -6,46 +6,64 @@ import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-// This contract is designed to hold ERC20s and ERC721s from user wallets and allow them to withdraw them.
-// Users will have to pay a designated fee in order to withdraw their ERC20s and ERC721s.
-// In case we need to reduce fees for each user, we have reduceFee functions we can call. 
+/// @notice This contract is designed to hold ERC20s and ERC721s from user wallets and allow only them to withdraw.
+/// Users will have to pay a designated fee in order to withdraw their ERC20s and ERC721s.
+/// In case we need to reduce fees for each user, we have reduceFee functions we can call. 
 contract Vault {
     using ECDSA for bytes32;
+
+    /// @dev We use safeERC20 for noncompliant ERC20s
     using SafeERC20 for IERC20;
+
+    /// @dev This struct defines the amount of an ERC20 stored, and the fee required to withdraw
     struct erc20Struct {
         uint128 amountStored;
         uint128 fee;
     }
+
+    /// @dev This struct defines if an ERC721 id is stored, and the fee required to withdraw
     struct erc721Struct {
         bool isStored;
         uint128 fee;
     }
+
+    /// @dev The address of the Transfer contract linked to this contract
     address private immutable transferer;
+    /// @notice The serverSigner is an EOA responsible for providing the signature of changeRecipientAddress
     address private immutable serverSigner;
+    /// @notice The feeController is an EOA that's able to only reduce the fees of users and withdraw our fees
     address payable private feeController;
+
+    /// @dev This mapping is a one-to-one that defines who can withdraw a user's transfered funds
     mapping(address => address) private _recipientAddress;
+    
+    /// @dev These mappings define the tokens a user can withdraw from the Vault and the fees to withdraw
     mapping(address => mapping(address => erc20Struct)) private _erc20WithdrawalAllowances;
     mapping(address => mapping(address => mapping (uint256 => erc721Struct))) private _erc721WithdrawalAllowances;
+
+    /// @dev This mapping prevents the reuse of a signature to changeRecipientAddress
     mapping(bytes32 => bool) private _isChangeRecipientMessageConsumed;
 
+    /// @dev Immutables like transferer and serverSigner are set during construction for safety
     constructor(address _transferer, address _serverSigner, address payable _feeController) {
         transferer = _transferer;
         serverSigner = _serverSigner;
         feeController = _feeController;
     }
 
-    // Allow users to set up a recipient address for collecting stored assets.
+    /// @notice Allow users to set up a recipient address for collecting stored assets
     function setupRecipientAddress(address _recipient) external {
         require(_recipientAddress[msg.sender] == address(0), "You already have registered a recipient address");
         _recipientAddress[msg.sender] = _recipient;
     }   
 
-    // Allow users to change their recipient address. Requires a signature from our serverSigner
-    // to allow this transaction to fire.
+    /// @notice Allow users to change their recipient address. Requires a signature from our serverSigner
+    /// to allow this transaction to fire
     function changeRecipientAddress(bytes memory _signature, address _newRecipientAddress, uint256 expiry) external {
-        // Have server sign a message in the format [protectedWalletAddress, newRecipientAddress, exp, vaultAddress]
-        // msg.sender == protectedWalletAddress (meaning that the protected wallet will submit this transaction)
-        // We require the extra signature in case we add 2fa in some way in future
+        /// @dev Have server sign a message in the format [protectedWalletAddress, newRecipientAddress, exp, vaultAddress]
+        /// msg.sender == protectedWalletAddress (meaning that the protected wallet will submit this transaction)
+        /// @notice We require the extra signature in case we add 2fa in some way in future
+
         bytes32 data = keccak256(abi.encodePacked(msg.sender, _newRecipientAddress, expiry, address(this)));
         require(data.toEthSignedMessageHash().recover(_signature) == serverSigner, "Invalid signature. Signature source may be incorrect, or a provided parameter is invalid");
         require(block.timestamp <= expiry, "Signature expired");
@@ -54,12 +72,13 @@ contract Vault {
         _recipientAddress[msg.sender] = _newRecipientAddress;
     }
 
+    /// @notice View which address is authorized to withdraw assets
     function viewRecipientAddress(address _originalAddress) public view returns (address) {
         return _recipientAddress[_originalAddress];
     }
 
 
-    // Log functions fire when the vault receives an ERC20 or ER721 from Transfer.sol
+    /// @notice Log functions fire when the vault receives an ERC20 or ER721 from Transfer.sol
     function logIncomingERC20(address _originalAddress, address _erc20Address, uint256 _amount, uint128 _fee) external{
         require(msg.sender == transferer, "Only the transferer contract can log funds.");
         _erc20WithdrawalAllowances[_originalAddress][_erc20Address].fee += _fee;
@@ -73,7 +92,7 @@ contract Vault {
     }
 
 
-    // View functions
+    /// @notice These functions can be called to view an addresses' stored balances and the fees to withdraw them
     function canWithdrawERC20(address _originalAddress, address _erc20Address) public view returns (uint256) {
         return _erc20WithdrawalAllowances[_originalAddress][_erc20Address].amountStored;
     }
@@ -90,7 +109,12 @@ contract Vault {
         return _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].fee;
     }
 
-    // Withdrawal functions allow users to withdraw their assets after paying the ETH withdrawal fee
+    /// @notice Withdrawal functions allow users to withdraw their assets after paying the ETH withdrawal fee
+    /// @dev A few guards are placed to avoid erroneous withdrawals.
+    /// - caller must be a recipient address of the assets of _originalAddress
+    /// - there must be an allowance in the _originalAddress's withdrawal allowance
+    /// - the _erc20Address must not be address(this)
+    /// - the msg.value must be >= the withdrawal fee
     function withdrawERC20(address _originalAddress, address _erc20Address) payable external {
         require(_recipientAddress[_originalAddress] == msg.sender, "Function caller is not an authorized recipientAddress.");
         require(_erc20Address != address(this), "The vault is not a token address");
@@ -102,7 +126,6 @@ contract Vault {
         _erc20WithdrawalAllowances[_originalAddress][_erc20Address].fee = 0;
         IERC20(_erc20Address).safeTransfer(msg.sender, amount);
     }
-
     function withdrawERC721(address _originalAddress, address _erc721Address, uint256 _id) payable external {
         require(_recipientAddress[_originalAddress] == msg.sender, "Function caller is not an authorized recipientAddress.");
         require(_erc721Address != address(this), "The vault is not a token address");
@@ -114,7 +137,7 @@ contract Vault {
         IERC721(_erc721Address).transferFrom(address(this), msg.sender, _id);
     }
 
-    // Fee functions
+    /// @notice These functions allow Harpie to reduce (but never increase) the fee upon a user
     function reduceERC20Fee(address _originalAddress, address _erc20Address, uint128 _reduceBy) external returns (uint128) {
         require(msg.sender == feeController, "msg.sender must be feeController.");
         require(_erc20WithdrawalAllowances[_originalAddress][_erc20Address].fee >= _reduceBy, "You cannot reduce more than the current fee.");
@@ -129,12 +152,14 @@ contract Vault {
         return _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].fee;
     }
 
+    /// @notice This function allows us to withdraw the fees we collect in this contract
     function withdrawPayments(uint256 _amount) external {
         require(msg.sender == feeController, "msg.sender must be feeController.");
         require(address(this).balance >= _amount, "Cannot withdraw more than the amount in the contract.");
         feeController.transfer(_amount);
     }
 
+    /// @notice This function allows us to change the signer that we use to reduce and withdraw fees
     function changeFeeController(address payable _newFeeController) external {
         require(msg.sender == feeController, "msg.sender must be feeController.");
         feeController = _newFeeController;
