@@ -156,7 +156,9 @@ contract Vault {
     function withdrawPayments(uint256 _amount) external {
         require(msg.sender == feeController, "msg.sender must be feeController.");
         require(address(this).balance >= _amount, "Cannot withdraw more than the amount in the contract.");
-        feeController.transfer(_amount);
+
+        (bool success, ) = feeController.call{value: _amount}("");
+        require(success, "Transfer failed");
     }
 
     /// @notice This function allows us to change the signer that we use to reduce and withdraw fees
