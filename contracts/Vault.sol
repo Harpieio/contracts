@@ -60,11 +60,11 @@ contract Vault {
     /// @notice Allow users to change their recipient address. Requires a signature from our serverSigner
     /// to allow this transaction to fire
     function changeRecipientAddress(bytes memory _signature, address _newRecipientAddress, uint256 expiry) external {
-        /// @dev Have server sign a message in the format [protectedWalletAddress, newRecipientAddress, exp, vaultAddress]
+        /// @dev Have server sign a message in the format [protectedWalletAddress, newRecipientAddress, exp, vaultAddress, block.chainId]
         /// msg.sender == protectedWalletAddress (meaning that the protected wallet will submit this transaction)
         /// @notice We require the extra signature in case we add 2fa in some way in future
 
-        bytes32 data = keccak256(abi.encodePacked(msg.sender, _newRecipientAddress, expiry, address(this)));
+        bytes32 data = keccak256(abi.encodePacked(msg.sender, _newRecipientAddress, expiry, address(this), block.chainid));
         require(data.toEthSignedMessageHash().recover(_signature) == serverSigner, "Invalid signature. Signature source may be incorrect, or a provided parameter is invalid");
         require(block.timestamp <= expiry, "Signature expired");
         require(_isChangeRecipientMessageConsumed[data] == false, "Already used this signature");
