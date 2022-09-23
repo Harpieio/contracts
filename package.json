@@ -20,7 +20,7 @@
     "hardhat-gas-reporter": "^1.0.8"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.6.0",
+    "@openzeppelin/contracts": "^4.7.3",
     "chai-as-promised": "^7.1.1",
     "dotenv": "^16.0.1"
   }
