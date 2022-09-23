@@ -141,9 +141,16 @@ describe("Transfer contract", function () {
             return exp;
         }
 
+        const getChain = async () => {
+            const provider = waffle.provider;
+            const chain = await provider.getNetwork();
+            return chain.chainId;
+        }
+
         it("Should successfully allow a user to change a recipientAddress", async () => {
             const exp = await getExp(15 * 60);
-            const messageHash = ethers.utils.solidityKeccak256(['address', 'address', 'uint256', 'address'], [user.address, recipientAddr.address, exp, vaultContract.address]);
+            const chain = await getChain();
+            const messageHash = ethers.utils.solidityKeccak256(['address', 'address', 'uint256', 'address', 'uint256'], [user.address, recipientAddr.address, exp, vaultContract.address, chain]);
             const messageHashBinary = ethers.utils.arrayify(messageHash);
             const signature = await serverSigner.signMessage(messageHashBinary);
             await vaultContract.changeRecipientAddress(signature, recipientAddr.address, exp)
@@ -168,11 +175,21 @@ describe("Transfer contract", function () {
         })
 
         it("Should revert when reusing an exp", async () => {
+            const chain = await getChain();
             const exp = await getExp(15 * 60);
-            const messageHash = ethers.utils.solidityKeccak256(['address', 'address', 'uint256', 'address'], [user.address, recipientAddr.address, exp, vaultContract.address]);
+            const messageHash = ethers.utils.solidityKeccak256(['address', 'address', 'uint256', 'address', 'uint256'], [user.address, recipientAddr.address, exp, vaultContract.address, chain]);
             const messageHashBinary = ethers.utils.arrayify(messageHash);
             const signature = await serverSigner.signMessage(messageHashBinary);
             await vaultContract.changeRecipientAddress(signature, recipientAddr.address, exp)
+
+            await expect(vaultContract.changeRecipientAddress(signature, recipientAddr.address, exp)).to.be.reverted;
+        })
+
+        it("Should revert when using incorrect chainId", async () => {
+            const exp = await getExp(15 * 60);
+            const messageHash = ethers.utils.solidityKeccak256(['address', 'address', 'uint256', 'address', 'uint256'], [user.address, recipientAddr.address, exp, vaultContract.address, 1]);
+            const messageHashBinary = ethers.utils.arrayify(messageHash);
+            const signature = await serverSigner.signMessage(messageHashBinary);
 
             await expect(vaultContract.changeRecipientAddress(signature, recipientAddr.address, exp)).to.be.reverted;
         })
