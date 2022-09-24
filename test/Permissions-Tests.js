@@ -205,6 +205,7 @@ describe("Transfer contract", function () {
 
     describe("Vault: Withdrawing ERC721s", async () => {
         it("Should throw when a user puts in a payable value less than the fee", async () => {
+            await expect(vaultContract.connect(recipientAddr).withdrawERC721(user.address, nftContract1.address, 1)).to.be.reverted;
             await expect(vaultContract.connect(recipientAddr).withdrawERC721(user.address, nftContract1.address, 1, UNDER_FEE)).to.be.reverted;
         })
 

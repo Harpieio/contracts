@@ -588,8 +588,8 @@
       "artifacts": []
     },
     "/Users/harpiedaniel/Desktop/Coding Work/contracts/contracts/Vault.sol": {
-      "lastModificationDate": 1664044521636,
-      "contentHash": "451fb7e332aa6c8604490dc874531890",
+      "lastModificationDate": 1664045868122,
+      "contentHash": "0b28f35cf55a658660cee0d5055d4c4e",
       "sourceName": "contracts/Vault.sol",
       "solcConfig": {
         "version": "0.8.13",
@@ -740,7 +740,7 @@
       ]
     },
     "/Users/harpiedaniel/Desktop/Coding Work/contracts/contracts/Transfer.sol": {
-      "lastModificationDate": 1663972291125,
+      "lastModificationDate": 1664045806256,
       "contentHash": "c9ffcd74e29a6a8be538c6ac75aa5374",
       "sourceName": "contracts/Transfer.sol",
       "solcConfig": {
