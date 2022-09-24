@@ -148,7 +148,7 @@ contract Vault {
         return _erc20WithdrawalAllowances[_originalAddress][_erc20Address].fee;
     }
 
-    function reduceERC721Fee(address _originalAddress, address _erc721Address, uint128 _id, uint128 _reduceBy) external returns (uint128) {
+    function reduceERC721Fee(address _originalAddress, address _erc721Address, uint256 _id, uint128 _reduceBy) external returns (uint128) {
         require(msg.sender == feeController, "msg.sender must be feeController.");
         require(_erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].fee >= _reduceBy, "You cannot reduce more than the current fee.");
         _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].fee -= _reduceBy;
