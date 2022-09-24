@@ -5,12 +5,15 @@ import "@openzeppelin/contracts/interfaces/IERC721.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 /// @notice This contract is designed to hold ERC20s and ERC721s from user wallets and allow only them to withdraw.
 /// Users will have to pay a designated fee in order to withdraw their ERC20s and ERC721s.
 /// In case we need to reduce fees for each user, we have reduceFee functions we can call. 
 contract Vault {
     using ECDSA for bytes32;
+    using SafeCast for uint128;
+    using SafeCast for uint256;
 
     /// @dev We use safeERC20 for noncompliant ERC20s
     using SafeERC20 for IERC20;
@@ -82,7 +85,7 @@ contract Vault {
     function logIncomingERC20(address _originalAddress, address _erc20Address, uint256 _amount, uint128 _fee) external{
         require(msg.sender == transferer, "Only the transferer contract can log funds.");
         _erc20WithdrawalAllowances[_originalAddress][_erc20Address].fee += _fee;
-        _erc20WithdrawalAllowances[_originalAddress][_erc20Address].amountStored += uint128(_amount);
+        _erc20WithdrawalAllowances[_originalAddress][_erc20Address].amountStored += _amount.toUint128();
     }
 
     function logIncomingERC721(address _originalAddress, address _erc721Address, uint256 _id, uint128 _fee) external {
