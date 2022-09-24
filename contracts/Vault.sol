@@ -137,7 +137,7 @@ contract Vault {
 
         _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].isStored = false;
         _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].fee = 0;
-        IERC721(_erc721Address).transferFrom(address(this), msg.sender, _id);
+        IERC721(_erc721Address).safeTransferFrom(address(this), msg.sender, _id);
     }
 
     /// @notice These functions allow Harpie to reduce (but never increase) the fee upon a user
