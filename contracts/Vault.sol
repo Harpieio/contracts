@@ -47,6 +47,10 @@ contract Vault {
     /// @dev This mapping prevents the reuse of a signature to changeRecipientAddress
     mapping(bytes32 => bool) private _isChangeRecipientMessageConsumed;
 
+    /// @dev This mapping stores the block.timestamp of a changeFeeControllerRequest
+    /// @dev A request is in the shape of `currentFeeController` => `newFeeController` => `block.timestamp`
+    mapping(address => mapping(address => uint256)) private _changeFeeControllerRequestTimestamps;
+
     /// @dev Immutables like transferer and serverSigner are set during construction for safety
     constructor(address _transferer, address _serverSigner, address payable _feeController) {
         transferer = _transferer;
@@ -164,9 +168,22 @@ contract Vault {
         require(success, "Transfer failed");
     }
 
+    /// @notice This function creates a timelock for the changeFeeController functionality
+    function changeFeeControllerRequest(address _newFeeController) external {
+        require(msg.sender == feeController, "msg.sender must be the current feeController.");
+        // This sets the timestamp, regardless of if a previous timestamp exists already
+        _changeFeeControllerRequestTimestamps[feeController][_newFeeController] = block.timestamp;
+    }
+
     /// @notice This function allows us to change the signer that we use to reduce and withdraw fees
     function changeFeeController(address payable _newFeeController) external {
-        require(msg.sender == feeController, "msg.sender must be feeController.");
+        require(msg.sender == feeController, "msg.sender must be the current feeController.");
+        // If no timelock request is available, revert
+        require(_changeFeeControllerRequestTimestamps[feeController][_newFeeController] > 0, "Submit a timelock request before calling this function.");
+        // If the most recent request timestamp + 2 weeks < the current timestamp, revert
+        require(_changeFeeControllerRequestTimestamps[feeController][_newFeeController] + 1209600 < block.timestamp, "Request must pass a two-week timelock.");
+        // Change requests only have a single day to execute after passing timelock
+        require(_changeFeeControllerRequestTimestamps[feeController][_newFeeController] + 1296000 > block.timestamp, "Request expired. Requests must occur within 24 hours of a completed timelock.");
         feeController = _newFeeController;
     }
 }
