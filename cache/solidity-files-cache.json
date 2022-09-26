@@ -1,9 +1,9 @@
 {
   "_format": "hh-sol-cache-2",
   "files": {
-    "/Users/harpiedaniel/Desktop/Coding Work/contracts/contracts/Fungible.sol": {
-      "lastModificationDate": 1661365812162,
-      "contentHash": "8f6f328043b96b30f8688dd82e676e7d",
+    "C:\\Users\\dnlch\\proj\\flashbot\\contracts\\Fungible.sol": {
+      "lastModificationDate": 1652839573852,
+      "contentHash": "1209ccd743d674c8b5a760aca7e945f4",
       "sourceName": "contracts/Fungible.sol",
       "solcConfig": {
         "version": "0.8.13",
@@ -39,9 +39,9 @@
         "Fungible"
       ]
     },
-    "/Users/harpiedaniel/Desktop/Coding Work/contracts/node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol": {
-      "lastModificationDate": 1663973322417,
-      "contentHash": "af7bd64e1cfefbf6cb07f2adc1a25392",
+    "C:\\Users\\dnlch\\proj\\flashbot\\node_modules\\@openzeppelin\\contracts\\token\\ERC20\\ERC20.sol": {
+      "lastModificationDate": 1652752201373,
+      "contentHash": "a9d2146925da52142435d3bb8df53c3c",
       "sourceName": "@openzeppelin/contracts/token/ERC20/ERC20.sol",
       "solcConfig": {
         "version": "0.8.13",
@@ -78,8 +78,8 @@
         "ERC20"
       ]
     },
-    "/Users/harpiedaniel/Desktop/Coding Work/contracts/node_modules/@openzeppelin/contracts/utils/Counters.sol": {
-      "lastModificationDate": 1661367596527,
+    "C:\\Users\\dnlch\\proj\\flashbot\\node_modules\\@openzeppelin\\contracts\\utils\\Counters.sol": {
+      "lastModificationDate": 1652752201146,
       "contentHash": "74654e3ae5d7f39555055dfe244dab7a",
       "sourceName": "@openzeppelin/contracts/utils/Counters.sol",
       "solcConfig": {
@@ -113,8 +113,8 @@
         "Counters"
       ]
     },
-    "/Users/harpiedaniel/Desktop/Coding Work/contracts/node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol": {
-      "lastModificationDate": 1661367596621,
+    "C:\\Users\\dnlch\\proj\\flashbot\\node_modules\\@openzeppelin\\contracts\\token\\ERC20\\IERC20.sol": {
+      "lastModificationDate": 1652752201714,
       "contentHash": "ad7c2d0af148c8f9f097d65deeb4da6b",
       "sourceName": "@openzeppelin/contracts/token/ERC20/IERC20.sol",
       "solcConfig": {
@@ -148,8 +148,8 @@
         "IERC20"
       ]
     },
-    "/Users/harpiedaniel/Desktop/Coding Work/contracts/node_modules/@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol": {
-      "lastModificationDate": 1661367596623,
+    "C:\\Users\\dnlch\\proj\\flashbot\\node_modules\\@openzeppelin\\contracts\\token\\ERC20\\extensions\\IERC20Metadata.sol": {
+      "lastModificationDate": 1652752201723,
       "contentHash": "909ab67fc5c25033fe6cd364f8c056f9",
       "sourceName": "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol",
       "solcConfig": {
@@ -185,8 +185,8 @@
         "IERC20Metadata"
       ]
     },
-    "/Users/harpiedaniel/Desktop/Coding Work/contracts/node_modules/@openzeppelin/contracts/utils/Context.sol": {
-      "lastModificationDate": 1661367596527,
+    "C:\\Users\\dnlch\\proj\\flashbot\\node_modules\\@openzeppelin\\contracts\\utils\\Context.sol": {
+      "lastModificationDate": 1652752201141,
       "contentHash": "5f2c5c4b6af2dd4551027144797bc8be",
       "sourceName": "@openzeppelin/contracts/utils/Context.sol",
       "solcConfig": {
@@ -220,9 +220,9 @@
         "Context"
       ]
     },
-    "/Users/harpiedaniel/Desktop/Coding Work/contracts/contracts/NonCompliant.sol": {
-      "lastModificationDate": 1661564490257,
-      "contentHash": "a10dc2b06ad0250175ef2158fee06b3c",
+    "C:\\Users\\dnlch\\proj\\flashbot\\contracts\\NonCompliant.sol": {
+      "lastModificationDate": 1661799945111,
+      "contentHash": "2c2dee0232cbcb530155fcb75317a3af",
       "sourceName": "contracts/NonCompliant.sol",
       "solcConfig": {
         "version": "0.8.13",
@@ -258,9 +258,9 @@
         "NonCompliant"
       ]
     },
-    "/Users/harpiedaniel/Desktop/Coding Work/contracts/node_modules/@openzeppelin/contracts/token/ERC721/ERC721.sol": {
-      "lastModificationDate": 1663973322419,
-      "contentHash": "79ff1a7eb801a525aa315fb7a679eede",
+    "C:\\Users\\dnlch\\proj\\flashbot\\node_modules\\@openzeppelin\\contracts\\token\\ERC721\\ERC721.sol": {
+      "lastModificationDate": 1652752201461,
+      "contentHash": "21b9f3bdb3e60f56ea81361c37420136",
       "sourceName": "@openzeppelin/contracts/token/ERC721/ERC721.sol",
       "solcConfig": {
         "version": "0.8.13",
@@ -301,9 +301,9 @@
         "ERC721"
       ]
     },
-    "/Users/harpiedaniel/Desktop/Coding Work/contracts/node_modules/@openzeppelin/contracts/token/ERC721/IERC721.sol": {
-      "lastModificationDate": 1663973322430,
-      "contentHash": "ec99d946db3685a3630554aa6055bd7f",
+    "C:\\Users\\dnlch\\proj\\flashbot\\node_modules\\@openzeppelin\\contracts\\token\\ERC721\\IERC721.sol": {
+      "lastModificationDate": 1652752201754,
+      "contentHash": "cd8e72e5859bddd5fd26b2fb5c51c846",
       "sourceName": "@openzeppelin/contracts/token/ERC721/IERC721.sol",
       "solcConfig": {
         "version": "0.8.13",
@@ -338,8 +338,8 @@
         "IERC721"
       ]
     },
-    "/Users/harpiedaniel/Desktop/Coding Work/contracts/node_modules/@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol": {
-      "lastModificationDate": 1661367596630,
+    "C:\\Users\\dnlch\\proj\\flashbot\\node_modules\\@openzeppelin\\contracts\\token\\ERC721\\IERC721Receiver.sol": {
+      "lastModificationDate": 1652752201800,
       "contentHash": "c22d4395e33763de693fd440c6fd10e1",
       "sourceName": "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol",
       "solcConfig": {
@@ -373,8 +373,8 @@
         "IERC721Receiver"
       ]
     },
-    "/Users/harpiedaniel/Desktop/Coding Work/contracts/node_modules/@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol": {
-      "lastModificationDate": 1663973322430,
+    "C:\\Users\\dnlch\\proj\\flashbot\\node_modules\\@openzeppelin\\contracts\\token\\ERC721\\extensions\\IERC721Metadata.sol": {
+      "lastModificationDate": 1652752201790,
       "contentHash": "efbc0d15b80a74e34dbe8da0f3e879bb",
       "sourceName": "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol",
       "solcConfig": {
@@ -410,9 +410,9 @@
         "IERC721Metadata"
       ]
     },
-    "/Users/harpiedaniel/Desktop/Coding Work/contracts/node_modules/@openzeppelin/contracts/utils/Address.sol": {
-      "lastModificationDate": 1663973322410,
-      "contentHash": "c476b3895a94798b88a4bb97399e6dfe",
+    "C:\\Users\\dnlch\\proj\\flashbot\\node_modules\\@openzeppelin\\contracts\\utils\\Address.sol": {
+      "lastModificationDate": 1652752201077,
+      "contentHash": "ad714a6368ee7d43cded6bbe8af0b155",
       "sourceName": "@openzeppelin/contracts/utils/Address.sol",
       "solcConfig": {
         "version": "0.8.13",
@@ -445,9 +445,9 @@
         "Address"
       ]
     },
-    "/Users/harpiedaniel/Desktop/Coding Work/contracts/node_modules/@openzeppelin/contracts/utils/Strings.sol": {
-      "lastModificationDate": 1663973322436,
-      "contentHash": "cf46906c4035f51639a22265066a9e78",
+    "C:\\Users\\dnlch\\proj\\flashbot\\node_modules\\@openzeppelin\\contracts\\utils\\Strings.sol": {
+      "lastModificationDate": 1652752201994,
+      "contentHash": "9c54c6c065d9e590fdcdd72c451425b9",
       "sourceName": "@openzeppelin/contracts/utils/Strings.sol",
       "solcConfig": {
         "version": "0.8.13",
@@ -480,8 +480,8 @@
         "Strings"
       ]
     },
-    "/Users/harpiedaniel/Desktop/Coding Work/contracts/node_modules/@openzeppelin/contracts/utils/introspection/ERC165.sol": {
-      "lastModificationDate": 1661367596555,
+    "C:\\Users\\dnlch\\proj\\flashbot\\node_modules\\@openzeppelin\\contracts\\utils\\introspection\\ERC165.sol": {
+      "lastModificationDate": 1652752201331,
       "contentHash": "0e7db055ce108f9da7bb6686a00287c0",
       "sourceName": "@openzeppelin/contracts/utils/introspection/ERC165.sol",
       "solcConfig": {
@@ -517,8 +517,8 @@
         "ERC165"
       ]
     },
-    "/Users/harpiedaniel/Desktop/Coding Work/contracts/node_modules/@openzeppelin/contracts/utils/introspection/IERC165.sol": {
-      "lastModificationDate": 1661367596619,
+    "C:\\Users\\dnlch\\proj\\flashbot\\node_modules\\@openzeppelin\\contracts\\utils\\introspection\\IERC165.sol": {
+      "lastModificationDate": 1652752201684,
       "contentHash": "03e6768535ac4da0e9756f1d8a4a018a",
       "sourceName": "@openzeppelin/contracts/utils/introspection/IERC165.sol",
       "solcConfig": {
@@ -552,8 +552,8 @@
         "IERC165"
       ]
     },
-    "/Users/harpiedaniel/Desktop/Coding Work/contracts/node_modules/@openzeppelin/contracts/interfaces/IERC721.sol": {
-      "lastModificationDate": 1663973322429,
+    "C:\\Users\\dnlch\\proj\\flashbot\\node_modules\\@openzeppelin\\contracts\\interfaces\\IERC721.sol": {
+      "lastModificationDate": 1652752201751,
       "contentHash": "e6da7798a8c22c5043cc42d64a2a8f80",
       "sourceName": "@openzeppelin/contracts/interfaces/IERC721.sol",
       "solcConfig": {
@@ -587,9 +587,9 @@
       ],
       "artifacts": []
     },
-    "/Users/harpiedaniel/Desktop/Coding Work/contracts/contracts/Vault.sol": {
-      "lastModificationDate": 1664052046679,
-      "contentHash": "7ef261ed0b748e3158830f95d8b2147e",
+    "C:\\Users\\dnlch\\proj\\flashbot\\contracts\\Vault.sol": {
+      "lastModificationDate": 1664212263417,
+      "contentHash": "4a999d15ce7702492fee2bb354cff973",
       "sourceName": "contracts/Vault.sol",
       "solcConfig": {
         "version": "0.8.13",
@@ -628,8 +628,8 @@
         "Vault"
       ]
     },
-    "/Users/harpiedaniel/Desktop/Coding Work/contracts/node_modules/@openzeppelin/contracts/interfaces/IERC20.sol": {
-      "lastModificationDate": 1661367596621,
+    "C:\\Users\\dnlch\\proj\\flashbot\\node_modules\\@openzeppelin\\contracts\\interfaces\\IERC20.sol": {
+      "lastModificationDate": 1652752201710,
       "contentHash": "d151fbfe7939989b9acf22797b32058b",
       "sourceName": "@openzeppelin/contracts/interfaces/IERC20.sol",
       "solcConfig": {
@@ -663,9 +663,9 @@
       ],
       "artifacts": []
     },
-    "/Users/harpiedaniel/Desktop/Coding Work/contracts/node_modules/@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol": {
-      "lastModificationDate": 1663973322435,
-      "contentHash": "3a843b05b85a270e9455e3d2e804e633",
+    "C:\\Users\\dnlch\\proj\\flashbot\\node_modules\\@openzeppelin\\contracts\\token\\ERC20\\utils\\SafeERC20.sol": {
+      "lastModificationDate": 1652752201966,
+      "contentHash": "76814c83c32552ed2b521c816b4d801a",
       "sourceName": "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol",
       "solcConfig": {
         "version": "0.8.13",
@@ -692,7 +692,6 @@
       },
       "imports": [
         "../IERC20.sol",
-        "../extensions/draft-IERC20Permit.sol",
         "../../../utils/Address.sol"
       ],
       "versionPragmas": [
@@ -702,9 +701,9 @@
         "SafeERC20"
       ]
     },
-    "/Users/harpiedaniel/Desktop/Coding Work/contracts/node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol": {
-      "lastModificationDate": 1663973322414,
-      "contentHash": "e240957102529c3ccf73bcf4527bcddc",
+    "C:\\Users\\dnlch\\proj\\flashbot\\node_modules\\@openzeppelin\\contracts\\utils\\cryptography\\ECDSA.sol": {
+      "lastModificationDate": 1652752201256,
+      "contentHash": "482bcc512029ecf51ca4ae85cf4667c7",
       "sourceName": "@openzeppelin/contracts/utils/cryptography/ECDSA.sol",
       "solcConfig": {
         "version": "0.8.13",
@@ -739,9 +738,44 @@
         "ECDSA"
       ]
     },
-    "/Users/harpiedaniel/Desktop/Coding Work/contracts/contracts/Transfer.sol": {
-      "lastModificationDate": 1664045806256,
-      "contentHash": "c9ffcd74e29a6a8be538c6ac75aa5374",
+    "C:\\Users\\dnlch\\proj\\flashbot\\node_modules\\@openzeppelin\\contracts\\utils\\math\\SafeCast.sol": {
+      "lastModificationDate": 1652752201960,
+      "contentHash": "cd91252bfcbee6eaba8f5144f504583c",
+      "sourceName": "@openzeppelin/contracts/utils/math/SafeCast.sol",
+      "solcConfig": {
+        "version": "0.8.13",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "SafeCast"
+      ]
+    },
+    "C:\\Users\\dnlch\\proj\\flashbot\\contracts\\Transfer.sol": {
+      "lastModificationDate": 1664210739531,
+      "contentHash": "b0c5395a8a6372a76cd5a94afd09016d",
       "sourceName": "contracts/Transfer.sol",
       "solcConfig": {
         "version": "0.8.13",
@@ -778,9 +812,9 @@
         "Transfer"
       ]
     },
-    "/Users/harpiedaniel/Desktop/Coding Work/contracts/contracts/NFT.sol": {
-      "lastModificationDate": 1661365812162,
-      "contentHash": "c42d322c3e47a387806f8c2f19a2844a",
+    "C:\\Users\\dnlch\\proj\\flashbot\\contracts\\NFT.sol": {
+      "lastModificationDate": 1652823894920,
+      "contentHash": "3b3948b4ddbb58b1355c1a7ab1068057",
       "sourceName": "contracts/NFT.sol",
       "solcConfig": {
         "version": "0.8.13",
@@ -814,76 +848,6 @@
       ],
       "artifacts": [
         "NFT"
-      ]
-    },
-    "/Users/harpiedaniel/Desktop/Coding Work/contracts/node_modules/@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol": {
-      "lastModificationDate": 1663973322414,
-      "contentHash": "fb77f144244b9ab12533aa6ce85ef8c5",
-      "sourceName": "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol",
-      "solcConfig": {
-        "version": "0.8.13",
-        "settings": {
-          "optimizer": {
-            "enabled": false,
-            "runs": 200
-          },
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [],
-      "versionPragmas": [
-        "^0.8.0"
-      ],
-      "artifacts": [
-        "IERC20Permit"
-      ]
-    },
-    "/Users/harpiedaniel/Desktop/Coding Work/contracts/node_modules/@openzeppelin/contracts/utils/math/SafeCast.sol": {
-      "lastModificationDate": 1663973322434,
-      "contentHash": "64e3f111253497ba40c2ad9bdf48a191",
-      "sourceName": "@openzeppelin/contracts/utils/math/SafeCast.sol",
-      "solcConfig": {
-        "version": "0.8.13",
-        "settings": {
-          "optimizer": {
-            "enabled": false,
-            "runs": 200
-          },
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [],
-      "versionPragmas": [
-        "^0.8.0"
-      ],
-      "artifacts": [
-        "SafeCast"
       ]
     }
   }

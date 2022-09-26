@@ -44,8 +44,8 @@ contract Vault {
     mapping(address => mapping(address => erc20Struct)) private _erc20WithdrawalAllowances;
     mapping(address => mapping(address => mapping (uint256 => erc721Struct))) private _erc721WithdrawalAllowances;
 
-    /// @dev This mapping prevents the reuse of a signature to changeRecipientAddress
-    mapping(bytes32 => bool) private _isChangeRecipientMessageConsumed;
+    /// @dev This mapping prevents the reuse of a signature to changeRecipientAddress or an out-of-order usage
+    mapping(address => uint256) private _changeRecipientNonces;
 
     /// @dev This mapping stores the block.timestamp of a changeFeeControllerRequest
     /// @dev A request is in the shape of `currentFeeController` => `newFeeController` => `block.timestamp`
@@ -67,16 +67,20 @@ contract Vault {
     /// @notice Allow users to change their recipient address. Requires a signature from our serverSigner
     /// to allow this transaction to fire
     function changeRecipientAddress(bytes memory _signature, address _newRecipientAddress, uint256 expiry) external {
-        /// @dev Have server sign a message in the format [protectedWalletAddress, newRecipientAddress, exp, vaultAddress, block.chainId]
+        /// @dev Have server sign a message in the format [protectedWalletAddress, newRecipientAddress, exp, nonce, vaultAddress, block.chainId]
         /// msg.sender == protectedWalletAddress (meaning that the protected wallet will submit this transaction)
         /// @notice We require the extra signature in case we add 2fa in some way in future
 
-        bytes32 data = keccak256(abi.encodePacked(msg.sender, _newRecipientAddress, expiry, address(this), block.chainid));
+        bytes32 data = keccak256(abi.encodePacked(msg.sender, _newRecipientAddress, expiry, getNonce(msg.sender), address(this), block.chainid));
         require(data.toEthSignedMessageHash().recover(_signature) == serverSigner, "Invalid signature. Signature source may be incorrect, or a provided parameter is invalid");
         require(block.timestamp <= expiry, "Signature expired");
-        require(_isChangeRecipientMessageConsumed[data] == false, "Already used this signature");
-        _isChangeRecipientMessageConsumed[data] = true;
+        _changeRecipientNonces[msg.sender]++;
         _recipientAddress[msg.sender] = _newRecipientAddress;
+    }
+
+    /// @notice Get nonces for the above function
+    function getNonce(address _caller) public view returns (uint256) {
+        return _changeRecipientNonces[_caller];
     }
 
     /// @notice View which address is authorized to withdraw assets
