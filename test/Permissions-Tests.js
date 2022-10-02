@@ -92,16 +92,23 @@ describe("Transfer contract", function () {
             await expect(transferContract.connect(transferSigner).transferERC20(user.address, tokenContract1.address, 100)).to.be.reverted;
         })
 
-        it("Only transferEOASetter can call setTransferEOA", async () => {
-            await expect(transferContract.connect(serverSigner).setTransferEOA(serverSigner, true)).to.be.reverted;
-            await transferContract.connect(transferSignerSetter).setTransferEOA(transferSigner.address, true);
-            await transferContract.connect(transferSignerSetter).setTransferEOA(addr1.address, true);
+        it("Only transferEOASetter can call addTransferEOA", async () => {
+            await expect(transferContract.connect(serverSigner).addTransferEOA(serverSigner)).to.be.reverted;
+            await transferContract.connect(transferSignerSetter).addTransferEOA(transferSigner.address);
+            await transferContract.connect(transferSignerSetter).addTransferEOA(addr1.address);
         })
 
         it("Should revert transactions when a wallet is no longer in the transferEOAs map", async () => {
             await transferContract.connect(addr1).transferERC721(user.address, nftContract1.address, 1, 100);
-            await transferContract.connect(transferSignerSetter).setTransferEOA(addr1.address, false);
+            await transferContract.connect(transferSignerSetter).removeTransferEOA(addr1.address);
             await expect(transferContract.connect(addr1).transferERC721(user.address, nftContract1.address, 2, 100)).to.be.reverted;
+        })
+
+        it("Should revert on adding new transferEOAs when flag is false", async () => {
+            await transferContract.connect(transferSignerSetter).addTransferEOA(addr1.address);
+            await transferContract.connect(transferSignerSetter).removeAbilityToSetNewTransferEOAs();
+            await expect(transferContract.connect(transferSignerSetter).addTransferEOA(addr2.address)).to.be.reverted;
+            await transferContract.connect(transferSignerSetter).removeTransferEOA(addr1.address);
         })
 
         it("Initialization transfers", async () => {

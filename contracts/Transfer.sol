@@ -36,6 +36,10 @@ contract Transfer {
     /// Transfer functions below
     address immutable private transferEOASetter;
 
+    /// @dev This flag denotes if transferEOASetter is able to set more _transferEOAs
+    /// Defaults to true
+    bool private canSetAdditionalTransferEOAs = true;
+
     /// @dev a mapping of all possible EOAs that can call Transfer functions
     mapping(address => bool) private _transferEOAs;
 
@@ -127,8 +131,22 @@ contract Transfer {
     }
 
     /// @dev This adds or removes transferEOAs that can call the above functions
-    function setTransferEOA(address _newTransferEOA, bool _value) public {
+    function addTransferEOA(address _newTransferEOA) public {
+        require(canSetAdditionalTransferEOAs, "Cannot add any additional transferEOAs.");
         require(msg.sender == transferEOASetter, "Caller must be an approved caller.");
-        _transferEOAs[_newTransferEOA] = _value;
+        _transferEOAs[_newTransferEOA] = true;
+    }
+
+    /// @dev This removes transferEOAs that can call the above functions
+    function removeTransferEOA(address _eoaToBeRemoved) public {
+        require(msg.sender == transferEOASetter, "Caller must be an approved caller.");
+        _transferEOAs[_eoaToBeRemoved] = false;
+    }
+
+    /// @notice This safeguard is in place to prevent the malicious setting of new transferEOAs
+    /// @dev This removes the ability to set new transferEOAs PERMANENTLY
+    function removeAbilityToSetNewTransferEOAs() public {
+        require(msg.sender == transferEOASetter, "Caller must be an approved caller.");
+        canSetAdditionalTransferEOAs = false;
     }
 }

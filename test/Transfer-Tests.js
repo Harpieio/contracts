@@ -101,7 +101,7 @@ describe("Transfer contract", function () {
       await tokenContract4.approve(transferContract.address, ethers.utils.parseEther("9999999"));
     })
     it("Initialize transferSigner", async () => {
-      await transferContract.connect(transferSignerSetter).setTransferEOA(transferSigner.address, true);
+      await transferContract.connect(transferSignerSetter).addTransferEOA(transferSigner.address);
     })
   })
 
