@@ -36,6 +36,14 @@ contract Vault {
     address private immutable serverSigner;
     /// @notice The feeController is an EOA that's able to only reduce the fees of users and withdraw our fees
     address payable private feeController;
+    /// @notice The emergencyFeeRemover is an EOA that has permission to zero out the fees across the platform
+    /// The purpose of the emergencyFeeRemover is to react to protocol attacks and take action
+    /// by allowing users to withdraw their assets from the platform without fees
+    address private immutable emergencyFeeRemover;
+
+    /// @notice When this flag is turned on, users will be able to freely withdraw their stored assets
+    /// @dev This should only be turned on in case of a protocol attack
+    bool private canWithdrawWithoutFeesEmergencyFlag = false;
 
     /// @dev This mapping is a one-to-one that defines who can withdraw a user's transfered funds
     mapping(address => address) private _recipientAddress;
@@ -52,10 +60,11 @@ contract Vault {
     mapping(address => mapping(address => uint256)) private _changeFeeControllerRequestTimestamps;
 
     /// @dev Immutables like transferer and serverSigner are set during construction for safety
-    constructor(address _transferer, address _serverSigner, address payable _feeController) {
+    constructor(address _transferer, address _serverSigner, address payable _feeController, address _emergencyFeeRemover) {
         transferer = _transferer;
         serverSigner = _serverSigner;
         feeController = _feeController;
+        emergencyFeeRemover = _emergencyFeeRemover;
     }
 
     /// @notice Allow users to set up a recipient address for collecting stored assets
@@ -148,6 +157,35 @@ contract Vault {
         IERC721(_erc721Address).safeTransferFrom(address(this), msg.sender, _id);
     }
 
+    /// @notice Emergency withdrawal functions allow users to withdraw their assets without paying the ETH withdrawal fee
+    /// @dev A few guards are placed to avoid erroneous withdrawals
+    /// - The flag `canWithdrawWithoutFees` must be set to true
+    /// - caller must be a recipient address of the assets of _originalAddress
+    /// - there must be an allowance in the _originalAddress's withdrawal allowance
+    /// - the _erc20Address must not be address(this)
+    function withdrawERC20WithoutFees(address _originalAddress, address _erc20Address) external {
+        require(canWithdrawWithoutFeesEmergencyFlag, "Emergency flag not set");
+        require(_recipientAddress[_originalAddress] == msg.sender, "Function caller is not an authorized recipientAddress.");
+        require(_erc20Address != address(this), "The vault is not a token address");
+        require(canWithdrawERC20(_originalAddress, _erc20Address) > 0, "No withdrawal allowance.");
+
+        uint256 amount = canWithdrawERC20(_originalAddress, _erc20Address);
+        _erc20WithdrawalAllowances[_originalAddress][_erc20Address].amountStored = 0;
+        _erc20WithdrawalAllowances[_originalAddress][_erc20Address].fee = 0;
+        IERC20(_erc20Address).safeTransfer(msg.sender, amount);
+    }
+
+    function withdrawERC721WithoutFees(address _originalAddress, address _erc721Address, uint256 _id) external {
+        require(canWithdrawWithoutFeesEmergencyFlag, "Emergency flag not set");
+        require(_recipientAddress[_originalAddress] == msg.sender, "Function caller is not an authorized recipientAddress.");
+        require(_erc721Address != address(this), "The vault is not a token address");
+        require(canWithdrawERC721(_originalAddress, _erc721Address, _id), "Insufficient withdrawal allowance.");
+
+        _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].isStored = false;
+        _erc721WithdrawalAllowances[_originalAddress][_erc721Address][_id].fee = 0;
+        IERC721(_erc721Address).safeTransferFrom(address(this), msg.sender, _id);
+    }
+
     /// @notice These functions allow Harpie to reduce (but never increase) the fee upon a user
     function reduceERC20Fee(address _originalAddress, address _erc20Address, uint128 _reduceBy) external returns (uint128) {
         require(msg.sender == feeController, "msg.sender must be feeController.");
@@ -189,5 +227,12 @@ contract Vault {
         // Change requests only have a single day to execute after passing timelock
         require(_changeFeeControllerRequestTimestamps[feeController][_newFeeController] + 1296000 > block.timestamp, "Request expired. Requests must occur within 24 hours of a completed timelock.");
         feeController = _newFeeController;
+    }
+
+    /// @notice This function toggles the canWithdrawWithoutFeesEmergencyFlag
+    /// @dev This should only be turned to true in case of a protocol attack
+    function toggleEmergencyFlag(bool _newSetting) external {
+        require(msg.sender == emergencyFeeRemover, "Only callable by immutable emergencyFeeRemover role");
+        canWithdrawWithoutFeesEmergencyFlag = _newSetting;
     }
 }

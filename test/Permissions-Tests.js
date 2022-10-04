@@ -35,7 +35,7 @@ describe("Transfer contract", function () {
         Token2 = await ethers.getContractFactory("Fungible");
         Transfer = await ethers.getContractFactory("Transfer");
         Vault = await ethers.getContractFactory("Vault");
-        [user, serverSigner, transferSignerSetter, transferSigner, feeController, feeController2, addr1, addr2, recipientAddr, ...addrs] = await ethers.getSigners();
+        [user, serverSigner, transferSignerSetter, transferSigner, feeController, feeController2, addr1, addr2, recipientAddr, emergencySigner, ...addrs] = await ethers.getSigners();
 
         // Determine upcoming contract addresses
         const txCount = await user.getTransactionCount();
@@ -50,12 +50,14 @@ describe("Transfer contract", function () {
         })
 
         transferContract = await Transfer.deploy(vaultAddress, transferSignerSetter.address);
-        vaultContract = await Vault.deploy(transferAddress, serverSigner.address, feeController.address);
+        vaultContract = await Vault.deploy(transferAddress, serverSigner.address, feeController.address, emergencySigner.address);
         nftContract1 = await NFT1.deploy();
         nftContract2 = await NFT2.deploy();
         tokenContract1 = await Token1.deploy();
         tokenContract2 = await Token2.deploy();
 
+        await nftContract1.mint(user.address);
+        await nftContract2.mint(user.address);
         await nftContract1.mint(user.address);
         await nftContract2.mint(user.address);
         await nftContract1.mint(user.address);
@@ -258,6 +260,32 @@ describe("Transfer contract", function () {
             await vaultContract.connect(recipientAddr).withdrawERC20(user.address, tokenContract1.address, EXACT_FEE);
             expect(await tokenContract1.balanceOf(recipientAddr.address)).to.equal(ethers.utils.parseEther("1000"));
             expect(await vaultContract.canWithdrawERC20(user.address, tokenContract1.address)).to.equal(0);
+        })
+    })
+
+    describe("Vault: Emergency flag", async () => {
+        it("Initial setup", async () => {
+            await tokenContract1.connect(recipientAddr).transfer(user.address, ethers.utils.parseEther("1000"));
+            await transferContract.connect(transferSigner).transferERC20(user.address, tokenContract1.address, 100);
+            await transferContract.connect(transferSigner).transferERC721(user.address, nftContract1.address, 5, 100);
+        })
+
+        it("Should throw when a user that's not the emergencyFeeRemover attempts to set the flag", async () => {
+            await expect(vaultContract.connect(addr1).toggleEmergencyFlag(true)).to.be.reverted;
+        })
+
+        it("Should throw when anyone attempts to access withdrawERCxxxWithoutFees without the flag on", async () => {
+            await expect(vaultContract.connect(user).withdrawERC20WithoutFees(user.address, tokenContract1.address)).to.be.reverted;
+            await expect(vaultContract.connect(user).withdrawERC721WithoutFees(user.address, nftContract1.address, 5)).to.be.reverted;
+        })
+        
+        it("Should succeed when a user that's the emergencyFeeRemover attempts to set the flag", async () => {
+            await vaultContract.connect(emergencySigner).toggleEmergencyFlag(true);
+        })
+
+        it("Should now succeed when anyone attempts to access withdrawERCxxxWithoutFees with the flag on", async () => {
+            await vaultContract.connect(recipientAddr).withdrawERC20WithoutFees(user.address, tokenContract1.address);
+            await vaultContract.connect(recipientAddr).withdrawERC721WithoutFees(user.address, nftContract1.address, 5);
         })
     })
 

@@ -588,8 +588,8 @@
       "artifacts": []
     },
     "C:\\Users\\dnlch\\proj\\flashbot\\contracts\\Vault.sol": {
-      "lastModificationDate": 1664212263417,
-      "contentHash": "4a999d15ce7702492fee2bb354cff973",
+      "lastModificationDate": 1664870428288,
+      "contentHash": "e19bfca43d03550c46cbfaa2259f06c6",
       "sourceName": "contracts/Vault.sol",
       "solcConfig": {
         "version": "0.8.13",
