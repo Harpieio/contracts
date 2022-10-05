@@ -322,12 +322,12 @@ describe("Transfer contract", function () {
         })
 
         it("changeFeeController + requesting should throw when a wrong address calls it", async () => {
-            await expect(vaultContract.connect(addr1).changeFeeController(addr2.address)).to.be.reverted;
+            await expect(vaultContract.connect(addr1).changeFeeController()).to.be.reverted;
             await expect(vaultContract.connect(addr1).changeFeeControllerRequest(addr2.address)).to.be.reverted;
         })
 
         it("changeFeeController should throw without requesting a timelock beforehand", async () => {
-            await expect(vaultContract.connect(feeController).changeFeeController(feeController2.address)).to.be.reverted;
+            await expect(vaultContract.connect(feeController).changeFeeController()).to.be.reverted;
             await expect(vaultContract.connect(feeController2).reduceERC721Fee(user.address, nftContract2.address, 4, 100)).to.be.reverted;
         })
 
@@ -335,11 +335,11 @@ describe("Transfer contract", function () {
             await vaultContract.connect(feeController).changeFeeControllerRequest(addr2.address);
 
             const provider = waffle.provider;
-            provider.send("evm_increaseTime", [60*60*24*14 + 1]);
+            provider.send("evm_increaseTime", [60*60*24*15 + 1]);
             provider.send("evm_mine");
 
             //await vaultContract.connect(feeController).changeFeeController(feeController2.address);
-            await expect(vaultContract.connect(feeController).changeFeeController(feeController2.address)).to.be.reverted;
+            await expect(vaultContract.connect(feeController).changeFeeController()).to.be.reverted;
             await expect(vaultContract.connect(feeController2).reduceERC721Fee(user.address, nftContract2.address, 4, 100)).to.be.reverted;
         })
 
@@ -347,11 +347,11 @@ describe("Transfer contract", function () {
             await vaultContract.connect(feeController).changeFeeControllerRequest(feeController2.address);
 
             const provider = waffle.provider;
-            provider.send("evm_increaseTime", [60*60*24*7]);
+            provider.send("evm_increaseTime", [60*60*24*6]);
             provider.send("evm_mine");
 
             //await vaultContract.connect(feeController).changeFeeController(feeController2.address);
-            await expect(vaultContract.connect(feeController).changeFeeController(feeController2.address)).to.be.reverted;
+            await expect(vaultContract.connect(feeController).changeFeeController()).to.be.reverted;
             await expect(vaultContract.connect(feeController2).reduceERC721Fee(user.address, nftContract2.address, 4, 100)).to.be.reverted;
         })
 
@@ -363,7 +363,7 @@ describe("Transfer contract", function () {
             provider.send("evm_mine");
 
             //await vaultContract.connect(feeController).changeFeeController(feeController2.address);
-            await expect(vaultContract.connect(feeController).changeFeeController(feeController2.address)).to.be.reverted;
+            await expect(vaultContract.connect(feeController).changeFeeController()).to.be.reverted;
             await expect(vaultContract.connect(feeController2).reduceERC721Fee(user.address, nftContract2.address, 4, 100)).to.be.reverted;
         })
 
@@ -374,7 +374,7 @@ describe("Transfer contract", function () {
             provider.send("evm_increaseTime", [60*60*24*14 + 1]);
             provider.send("evm_mine");
 
-            await vaultContract.connect(feeController).changeFeeController(feeController2.address);
+            await vaultContract.connect(feeController).changeFeeController();
 
             await expect(vaultContract.connect(feeController).reduceERC721Fee(user.address, nftContract2.address, 4, 100)).to.be.reverted;
             expect(await vaultContract.erc721Fee(user.address, nftContract2.address, 4)).to.equal(100);

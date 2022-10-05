@@ -30,6 +30,13 @@ contract Vault {
         uint128 fee;
     }
 
+    /// @dev This struct stores the block.timestamp and new address of a changeFeeControllerRequest
+    /// @dev A request is in the shape of newFeeController, block.timestamp
+    struct changeFeeControllerStruct {
+        address payable newFeeController;
+        uint256 blocktime;
+    }
+
     /// @dev The address of the Transfer contract linked to this contract
     address private immutable transferer;
     /// @notice The serverSigner is an EOA responsible for providing the signature of changeRecipientAddress
@@ -45,6 +52,9 @@ contract Vault {
     /// @dev This should only be turned on in case of a protocol attack
     bool private canWithdrawWithoutFeesEmergencyFlag = false;
 
+    /// @dev This is the most recent changeFeeControllerRequest
+    changeFeeControllerStruct public pendingFeeController;
+
     /// @dev This mapping is a one-to-one that defines who can withdraw a user's transfered funds
     mapping(address => address) private _recipientAddress;
     
@@ -54,10 +64,6 @@ contract Vault {
 
     /// @dev This mapping prevents the reuse of a signature to changeRecipientAddress or an out-of-order usage
     mapping(address => uint256) private _changeRecipientNonces;
-
-    /// @dev This mapping stores the block.timestamp of a changeFeeControllerRequest
-    /// @dev A request is in the shape of `currentFeeController` => `newFeeController` => `block.timestamp`
-    mapping(address => mapping(address => uint256)) private _changeFeeControllerRequestTimestamps;
 
     /// @dev Immutables like transferer and serverSigner are set during construction for safety
     constructor(address _transferer, address _serverSigner, address payable _feeController, address _emergencyFeeRemover) {
@@ -211,22 +217,23 @@ contract Vault {
     }
 
     /// @notice This function creates a timelock for the changeFeeController functionality
-    function changeFeeControllerRequest(address _newFeeController) external {
+    function changeFeeControllerRequest(address payable _newFeeController) external {
         require(msg.sender == feeController, "msg.sender must be the current feeController.");
-        // This sets the timestamp, regardless of if a previous timestamp exists already
-        _changeFeeControllerRequestTimestamps[feeController][_newFeeController] = block.timestamp;
+        // This sets the pending request, regardless of if an existing request exists already
+        pendingFeeController = changeFeeControllerStruct(_newFeeController, block.timestamp);
     }
 
     /// @notice This function allows us to change the signer that we use to reduce and withdraw fees
-    function changeFeeController(address payable _newFeeController) external {
+    function changeFeeController() external {
         require(msg.sender == feeController, "msg.sender must be the current feeController.");
         // If no timelock request is available, revert
-        require(_changeFeeControllerRequestTimestamps[feeController][_newFeeController] > 0, "Submit a timelock request before calling this function.");
-        // If the most recent request timestamp + 2 weeks < the current timestamp, revert
-        require(_changeFeeControllerRequestTimestamps[feeController][_newFeeController] + 1209600 < block.timestamp, "Request must pass a two-week timelock.");
-        // Change requests only have a single day to execute after passing timelock
-        require(_changeFeeControllerRequestTimestamps[feeController][_newFeeController] + 1296000 > block.timestamp, "Request expired. Requests must occur within 24 hours of a completed timelock.");
-        feeController = _newFeeController;
+        require(pendingFeeController.blocktime > 0, "Submit a timelock request before calling this function.");
+        require(pendingFeeController.blocktime + 1209600 < block.timestamp, "Request must pass a two-week timelock.");
+        require(pendingFeeController.blocktime + 1296000 > block.timestamp, "Request expired. Requests must occur within 24 hours of a completed timelock.");
+        feeController = pendingFeeController.newFeeController;
+
+        changeFeeControllerStruct memory newStruct;
+        pendingFeeController = newStruct;
     }
 
     /// @notice This function toggles the canWithdrawWithoutFeesEmergencyFlag
