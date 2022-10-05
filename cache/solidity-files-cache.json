@@ -588,8 +588,8 @@
       "artifacts": []
     },
     "C:\\Users\\dnlch\\proj\\flashbot\\contracts\\Vault.sol": {
-      "lastModificationDate": 1662365792302,
-      "contentHash": "37b292581a481094ca8d38782d100d8a",
+      "lastModificationDate": 1664950914073,
+      "contentHash": "469a47e24044625f36c4bb64a4b0e3aa",
       "sourceName": "contracts/Vault.sol",
       "solcConfig": {
         "version": "0.8.13",
@@ -618,7 +618,8 @@
         "@openzeppelin/contracts/interfaces/IERC721.sol",
         "@openzeppelin/contracts/interfaces/IERC20.sol",
         "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol",
-        "@openzeppelin/contracts/utils/cryptography/ECDSA.sol"
+        "@openzeppelin/contracts/utils/cryptography/ECDSA.sol",
+        "@openzeppelin/contracts/utils/math/SafeCast.sol"
       ],
       "versionPragmas": [
         "^0.8.0"
@@ -737,9 +738,44 @@
         "ECDSA"
       ]
     },
+    "C:\\Users\\dnlch\\proj\\flashbot\\node_modules\\@openzeppelin\\contracts\\utils\\math\\SafeCast.sol": {
+      "lastModificationDate": 1652752201960,
+      "contentHash": "cd91252bfcbee6eaba8f5144f504583c",
+      "sourceName": "@openzeppelin/contracts/utils/math/SafeCast.sol",
+      "solcConfig": {
+        "version": "0.8.13",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "SafeCast"
+      ]
+    },
     "C:\\Users\\dnlch\\proj\\flashbot\\contracts\\Transfer.sol": {
-      "lastModificationDate": 1662580705828,
-      "contentHash": "5468d86d9eafde432c9aa810509c3487",
+      "lastModificationDate": 1664754452640,
+      "contentHash": "07936409f1b93befe2dd2b67f7dcdde7",
       "sourceName": "contracts/Transfer.sol",
       "solcConfig": {
         "version": "0.8.13",

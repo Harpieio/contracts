@@ -42,7 +42,7 @@ describe("Transfer contract", function () {
     Token6 = await ethers.getContractFactory("Fungible");
     Transfer = await ethers.getContractFactory("Transfer");
     Vault = await ethers.getContractFactory("Vault");
-    [user, serverSigner, transferSignerSetter, transferSigner, feeController, feeController2, addr1, addr2, recipientAddr, ...addrs] = await ethers.getSigners();
+    [user, serverSigner, transferSignerSetter, transferSigner, feeController, feeController2, addr1, addr2, recipientAddr, emergency, ...addrs] = await ethers.getSigners();
 
     // Determine upcoming contract addresses
     const txCount = await user.getTransactionCount();
@@ -57,7 +57,7 @@ describe("Transfer contract", function () {
     })
 
     transferContract = await Transfer.deploy(vaultAddress, transferSignerSetter.address);
-    vaultContract = await Vault.deploy(transferAddress, serverSigner.address, feeController.address);
+    vaultContract = await Vault.deploy(transferAddress, serverSigner.address, feeController.address, emergency.address);
     nftContract1 = await NFT1.deploy();
     nftContract2 = await NFT2.deploy();
     tokenContract1 = await Token1.deploy();
@@ -101,7 +101,7 @@ describe("Transfer contract", function () {
       await tokenContract4.approve(transferContract.address, ethers.utils.parseEther("9999999"));
     })
     it("Initialize transferSigner", async () => {
-      await transferContract.connect(transferSignerSetter).setTransferEOA(transferSigner.address, true);
+      await transferContract.connect(transferSignerSetter).addTransferEOA(transferSigner.address);
     })
   })
 

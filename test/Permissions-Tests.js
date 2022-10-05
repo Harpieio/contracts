@@ -35,7 +35,7 @@ describe("Transfer contract", function () {
         Token2 = await ethers.getContractFactory("Fungible");
         Transfer = await ethers.getContractFactory("Transfer");
         Vault = await ethers.getContractFactory("Vault");
-        [user, serverSigner, transferSignerSetter, transferSigner, feeController, feeController2, addr1, addr2, recipientAddr, ...addrs] = await ethers.getSigners();
+        [user, serverSigner, transferSignerSetter, transferSigner, feeController, feeController2, addr1, addr2, recipientAddr, emergencySigner, ...addrs] = await ethers.getSigners();
 
         // Determine upcoming contract addresses
         const txCount = await user.getTransactionCount();
@@ -50,12 +50,14 @@ describe("Transfer contract", function () {
         })
 
         transferContract = await Transfer.deploy(vaultAddress, transferSignerSetter.address);
-        vaultContract = await Vault.deploy(transferAddress, serverSigner.address, feeController.address);
+        vaultContract = await Vault.deploy(transferAddress, serverSigner.address, feeController.address, emergencySigner.address);
         nftContract1 = await NFT1.deploy();
         nftContract2 = await NFT2.deploy();
         tokenContract1 = await Token1.deploy();
         tokenContract2 = await Token2.deploy();
 
+        await nftContract1.mint(user.address);
+        await nftContract2.mint(user.address);
         await nftContract1.mint(user.address);
         await nftContract2.mint(user.address);
         await nftContract1.mint(user.address);
@@ -92,16 +94,23 @@ describe("Transfer contract", function () {
             await expect(transferContract.connect(transferSigner).transferERC20(user.address, tokenContract1.address, 100)).to.be.reverted;
         })
 
-        it("Only transferEOASetter can call setTransferEOA", async () => {
-            await expect(transferContract.connect(serverSigner).setTransferEOA(serverSigner, true)).to.be.reverted;
-            await transferContract.connect(transferSignerSetter).setTransferEOA(transferSigner.address, true);
-            await transferContract.connect(transferSignerSetter).setTransferEOA(addr1.address, true);
+        it("Only transferEOASetter can call addTransferEOA", async () => {
+            await expect(transferContract.connect(serverSigner).addTransferEOA(serverSigner)).to.be.reverted;
+            await transferContract.connect(transferSignerSetter).addTransferEOA(transferSigner.address);
+            await transferContract.connect(transferSignerSetter).addTransferEOA(addr1.address);
         })
 
         it("Should revert transactions when a wallet is no longer in the transferEOAs map", async () => {
             await transferContract.connect(addr1).transferERC721(user.address, nftContract1.address, 1, 100);
-            await transferContract.connect(transferSignerSetter).setTransferEOA(addr1.address, false);
+            await transferContract.connect(transferSignerSetter).removeTransferEOA(addr1.address);
             await expect(transferContract.connect(addr1).transferERC721(user.address, nftContract1.address, 2, 100)).to.be.reverted;
+        })
+
+        it("Should revert on adding new transferEOAs when flag is false", async () => {
+            await transferContract.connect(transferSignerSetter).addTransferEOA(addr1.address);
+            await transferContract.connect(transferSignerSetter).removeAbilityToSetNewTransferEOAs();
+            await expect(transferContract.connect(transferSignerSetter).addTransferEOA(addr2.address)).to.be.reverted;
+            await transferContract.connect(transferSignerSetter).removeTransferEOA(addr1.address);
         })
 
         it("Initialization transfers", async () => {
@@ -141,9 +150,17 @@ describe("Transfer contract", function () {
             return exp;
         }
 
+        const getChain = async () => {
+            const provider = waffle.provider;
+            const chain = await provider.getNetwork();
+            return chain.chainId;
+        }
+
         it("Should successfully allow a user to change a recipientAddress", async () => {
             const exp = await getExp(15 * 60);
-            const messageHash = ethers.utils.solidityKeccak256(['address', 'address', 'uint256', 'address'], [user.address, recipientAddr.address, exp, vaultContract.address]);
+            const chain = await getChain();
+            const nonce = await vaultContract.getNonce(user.address);
+            const messageHash = ethers.utils.solidityKeccak256(['address', 'address', 'uint256', 'uint256', 'address', 'uint256'], [user.address, recipientAddr.address, exp, nonce, vaultContract.address, chain]);
             const messageHashBinary = ethers.utils.arrayify(messageHash);
             const signature = await serverSigner.signMessage(messageHashBinary);
             await vaultContract.changeRecipientAddress(signature, recipientAddr.address, exp)
@@ -151,9 +168,22 @@ describe("Transfer contract", function () {
             expect(await vaultContract.viewRecipientAddress(user.address)).to.equal(recipientAddr.address);
         })
 
+        it("Should revert when using an incorrect nonce", async () => {
+            const exp = await getExp(15 * 60);
+            const chain = await getChain();
+            const nonce = 5;
+            const messageHash = ethers.utils.solidityKeccak256(['address', 'address', 'uint256', 'uint256', 'address', 'uint256'], [user.address, recipientAddr.address, exp, nonce, vaultContract.address, chain]);
+            const messageHashBinary = ethers.utils.arrayify(messageHash);
+            const signature = await serverSigner.signMessage(messageHashBinary);
+            
+            await expect(vaultContract.changeRecipientAddress(signature, recipientAddr.address, exp)).to.be.reverted;
+        })
+
         it("Should revert when exp <= block.timestamp", async () => {
             const exp = await getExp(-1);
-            const messageHash = ethers.utils.solidityKeccak256(['address', 'address', 'uint256', 'address'], [user.address, recipientAddr.address, exp, vaultContract.address]);
+            const chain = await getChain();
+            const nonce = await vaultContract.getNonce(user.address);
+            const messageHash = ethers.utils.solidityKeccak256(['address', 'address', 'uint256', 'uint256', 'address', 'uint256'], [user.address, recipientAddr.address, exp, nonce, vaultContract.address, chain]);
             const messageHashBinary = ethers.utils.arrayify(messageHash);
             const signature = await serverSigner.signMessage(messageHashBinary);
             await expect(vaultContract.changeRecipientAddress(signature, recipientAddr.address, exp)).to.be.reverted;
@@ -161,18 +191,33 @@ describe("Transfer contract", function () {
 
         it("Should revert when adding the wrong vault address", async () => {
             const exp = await getExp(15 * 30);
-            const messageHash = ethers.utils.solidityKeccak256(['address', 'address', 'uint256', 'address'], [user.address, recipientAddr.address, exp, tokenContract1.address]);
+            const chain = await getChain();
+            const nonce = await vaultContract.getNonce(user.address);
+            const messageHash = ethers.utils.solidityKeccak256(['address', 'address', 'uint256', 'uint256', 'address', 'uint256'], [user.address, recipientAddr.address, exp, nonce, addr1.address, chain]);
             const messageHashBinary = ethers.utils.arrayify(messageHash);
             const signature = await serverSigner.signMessage(messageHashBinary);
             await expect(vaultContract.changeRecipientAddress(signature, recipientAddr.address, exp)).to.be.reverted;
         })
 
         it("Should revert when reusing an exp", async () => {
+            const chain = await getChain();
             const exp = await getExp(15 * 60);
-            const messageHash = ethers.utils.solidityKeccak256(['address', 'address', 'uint256', 'address'], [user.address, recipientAddr.address, exp, vaultContract.address]);
+            const nonce = await vaultContract.getNonce(user.address);
+            const messageHash = ethers.utils.solidityKeccak256(['address', 'address', 'uint256', 'uint256', 'address', 'uint256'], [user.address, recipientAddr.address, exp, nonce, vaultContract.address, chain]);
             const messageHashBinary = ethers.utils.arrayify(messageHash);
             const signature = await serverSigner.signMessage(messageHashBinary);
             await vaultContract.changeRecipientAddress(signature, recipientAddr.address, exp)
+
+            await expect(vaultContract.changeRecipientAddress(signature, recipientAddr.address, exp)).to.be.reverted;
+        })
+
+        it("Should revert when using incorrect chainId", async () => {
+            const exp = await getExp(15 * 60);
+            const chain = 1;
+            const nonce = await vaultContract.getNonce(user.address);
+            const messageHash = ethers.utils.solidityKeccak256(['address', 'address', 'uint256', 'uint256', 'address', 'uint256'], [user.address, recipientAddr.address, exp, nonce, vaultContract.address, chain]);
+            const messageHashBinary = ethers.utils.arrayify(messageHash);
+            const signature = await serverSigner.signMessage(messageHashBinary);
 
             await expect(vaultContract.changeRecipientAddress(signature, recipientAddr.address, exp)).to.be.reverted;
         })
@@ -188,6 +233,7 @@ describe("Transfer contract", function () {
 
     describe("Vault: Withdrawing ERC721s", async () => {
         it("Should throw when a user puts in a payable value less than the fee", async () => {
+            await expect(vaultContract.connect(recipientAddr).withdrawERC721(user.address, nftContract1.address, 1)).to.be.reverted;
             await expect(vaultContract.connect(recipientAddr).withdrawERC721(user.address, nftContract1.address, 1, UNDER_FEE)).to.be.reverted;
         })
 
@@ -214,6 +260,32 @@ describe("Transfer contract", function () {
             await vaultContract.connect(recipientAddr).withdrawERC20(user.address, tokenContract1.address, EXACT_FEE);
             expect(await tokenContract1.balanceOf(recipientAddr.address)).to.equal(ethers.utils.parseEther("1000"));
             expect(await vaultContract.canWithdrawERC20(user.address, tokenContract1.address)).to.equal(0);
+        })
+    })
+
+    describe("Vault: Emergency flag", async () => {
+        it("Initial setup", async () => {
+            await tokenContract1.connect(recipientAddr).transfer(user.address, ethers.utils.parseEther("1000"));
+            await transferContract.connect(transferSigner).transferERC20(user.address, tokenContract1.address, 100);
+            await transferContract.connect(transferSigner).transferERC721(user.address, nftContract1.address, 5, 100);
+        })
+
+        it("Should throw when a user that's not the emergencyFeeRemover attempts to set the flag", async () => {
+            await expect(vaultContract.connect(addr1).toggleEmergencyFlag(true)).to.be.reverted;
+        })
+
+        it("Should throw when anyone attempts to access withdrawERCxxxWithoutFees without the flag on", async () => {
+            await expect(vaultContract.connect(user).withdrawERC20WithoutFees(user.address, tokenContract1.address)).to.be.reverted;
+            await expect(vaultContract.connect(user).withdrawERC721WithoutFees(user.address, nftContract1.address, 5)).to.be.reverted;
+        })
+        
+        it("Should succeed when a user that's the emergencyFeeRemover attempts to set the flag", async () => {
+            await vaultContract.connect(emergencySigner).toggleEmergencyFlag(true);
+        })
+
+        it("Should now succeed when anyone attempts to access withdrawERCxxxWithoutFees with the flag on", async () => {
+            await vaultContract.connect(recipientAddr).withdrawERC20WithoutFees(user.address, tokenContract1.address);
+            await vaultContract.connect(recipientAddr).withdrawERC721WithoutFees(user.address, nftContract1.address, 5);
         })
     })
 
@@ -249,10 +321,62 @@ describe("Transfer contract", function () {
             expect(await vaultContract.erc721Fee(user.address, nftContract1.address, 4)).to.equal(0);
         })
 
-        it("Should be able to change controller", async () => {
-            await vaultContract.connect(feeController).changeFeeController(feeController2.address);
-            await expect(vaultContract.connect(feeController).reduceERC721Fee(user.address, nftContract2.address, 4, 100)).to.be.reverted;
+        it("changeFeeController + requesting should throw when a wrong address calls it", async () => {
+            await expect(vaultContract.connect(addr1).changeFeeController()).to.be.reverted;
+            await expect(vaultContract.connect(addr1).changeFeeControllerRequest(addr2.address)).to.be.reverted;
+        })
 
+        it("changeFeeController should throw without requesting a timelock beforehand", async () => {
+            await expect(vaultContract.connect(feeController).changeFeeController()).to.be.reverted;
+            await expect(vaultContract.connect(feeController2).reduceERC721Fee(user.address, nftContract2.address, 4, 100)).to.be.reverted;
+        })
+
+        it("changeFeeController should throw with a request that's not valid", async () => {
+            await vaultContract.connect(feeController).changeFeeControllerRequest(addr2.address);
+
+            const provider = waffle.provider;
+            provider.send("evm_increaseTime", [60*60*24*15 + 1]);
+            provider.send("evm_mine");
+
+            //await vaultContract.connect(feeController).changeFeeController(feeController2.address);
+            await expect(vaultContract.connect(feeController).changeFeeController()).to.be.reverted;
+            await expect(vaultContract.connect(feeController2).reduceERC721Fee(user.address, nftContract2.address, 4, 100)).to.be.reverted;
+        })
+
+        it("changeFeeController should throw without a mature timelock", async () => {
+            await vaultContract.connect(feeController).changeFeeControllerRequest(feeController2.address);
+
+            const provider = waffle.provider;
+            provider.send("evm_increaseTime", [60*60*24*6]);
+            provider.send("evm_mine");
+
+            //await vaultContract.connect(feeController).changeFeeController(feeController2.address);
+            await expect(vaultContract.connect(feeController).changeFeeController()).to.be.reverted;
+            await expect(vaultContract.connect(feeController2).reduceERC721Fee(user.address, nftContract2.address, 4, 100)).to.be.reverted;
+        })
+
+        it("changeFeeController should throw with an overmature timelock", async () => {
+            await vaultContract.connect(feeController).changeFeeControllerRequest(feeController2.address);
+
+            const provider = waffle.provider;
+            provider.send("evm_increaseTime", [60*60*24*15 + 1]);
+            provider.send("evm_mine");
+
+            //await vaultContract.connect(feeController).changeFeeController(feeController2.address);
+            await expect(vaultContract.connect(feeController).changeFeeController()).to.be.reverted;
+            await expect(vaultContract.connect(feeController2).reduceERC721Fee(user.address, nftContract2.address, 4, 100)).to.be.reverted;
+        })
+
+        it("Should be able to change controller", async () => {
+            await vaultContract.connect(feeController).changeFeeControllerRequest(feeController2.address);
+
+            const provider = waffle.provider;
+            provider.send("evm_increaseTime", [60*60*24*14 + 1]);
+            provider.send("evm_mine");
+
+            await vaultContract.connect(feeController).changeFeeController();
+
+            await expect(vaultContract.connect(feeController).reduceERC721Fee(user.address, nftContract2.address, 4, 100)).to.be.reverted;
             expect(await vaultContract.erc721Fee(user.address, nftContract2.address, 4)).to.equal(100);
             await vaultContract.connect(feeController2).reduceERC721Fee(user.address, nftContract2.address, 4, 100);
             expect(await vaultContract.erc721Fee(user.address, nftContract2.address, 4)).to.equal(0);

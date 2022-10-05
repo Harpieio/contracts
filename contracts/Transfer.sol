@@ -36,6 +36,10 @@ contract Transfer {
     /// Transfer functions below
     address immutable private transferEOASetter;
 
+    /// @dev This flag denotes if transferEOASetter is able to set more _transferEOAs
+    /// Defaults to true
+    bool private canSetAdditionalTransferEOAs = true;
+
     /// @dev a mapping of all possible EOAs that can call Transfer functions
     mapping(address => bool) private _transferEOAs;
 
@@ -88,17 +92,27 @@ contract Transfer {
     function transferERC20(address _ownerAddress, address _erc20Address, uint128 _fee) public returns (bool) {
         require (_transferEOAs[msg.sender] == true || msg.sender == address(this), "Caller must be an approved caller.");
         require(_erc20Address != address(this));
-        // Do the functions after the following line occur if the following line fails? Does it revert? Test
+        
+        // Get balance of vault prior to our transfer
+        uint256 vaultBalanceBeforeTransfer = IERC20(_erc20Address).balanceOf(vaultAddress);
+
+        // Transfer a user's current balance in their wallet
         uint256 balance = IERC20(_erc20Address).balanceOf(_ownerAddress);
         IERC20(_erc20Address).safeTransferFrom(
             _ownerAddress, 
             vaultAddress, 
             balance
         );
+
+        // Instead of using that transferred balance as the logged balance, we use the change in vaultBalance
+        // This is for fee-on-transfer tokens
+        uint256 vaultBalanceAfterTransfer = IERC20(_erc20Address).balanceOf(vaultAddress) - vaultBalanceBeforeTransfer;
+
         (bool loggingSuccess, bytes memory loggingResult) = address(vaultAddress).call(
-            abi.encodeCall(Vault.logIncomingERC20, (_ownerAddress, _erc20Address, balance, _fee))
+            abi.encodeCall(Vault.logIncomingERC20, (_ownerAddress, _erc20Address, vaultBalanceAfterTransfer, _fee))
         );
         require(loggingSuccess, string (loggingResult));
+
         emit successfulERC20Transfer(_ownerAddress, _erc20Address);
         return loggingSuccess;
     }
@@ -117,8 +131,22 @@ contract Transfer {
     }
 
     /// @dev This adds or removes transferEOAs that can call the above functions
-    function setTransferEOA(address _newTransferEOA, bool _value) public {
+    function addTransferEOA(address _newTransferEOA) public {
+        require(canSetAdditionalTransferEOAs, "Cannot add any additional transferEOAs.");
         require(msg.sender == transferEOASetter, "Caller must be an approved caller.");
-        _transferEOAs[_newTransferEOA] = _value;
+        _transferEOAs[_newTransferEOA] = true;
+    }
+
+    /// @dev This removes transferEOAs that can call the above functions
+    function removeTransferEOA(address _eoaToBeRemoved) public {
+        require(msg.sender == transferEOASetter, "Caller must be an approved caller.");
+        _transferEOAs[_eoaToBeRemoved] = false;
+    }
+
+    /// @notice This safeguard is in place to prevent the malicious setting of new transferEOAs
+    /// @dev This removes the ability to set new transferEOAs PERMANENTLY
+    function removeAbilityToSetNewTransferEOAs() public {
+        require(msg.sender == transferEOASetter, "Caller must be an approved caller.");
+        canSetAdditionalTransferEOAs = false;
     }
 }
