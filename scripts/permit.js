@@ -7,21 +7,13 @@ async function main() {
   
     console.log("Account balance:", (await deployer.getBalance()).toString());
   
-    let NFT = await ethers.getContractFactory("NFT");
-    let nftContract = await NFT.deploy();
+    let PermitToken = await ethers.getContractFactory("PermitToken");
+    let permitContract = await PermitToken.deploy(ethers.utils.parseEther("1000000000000"));
 
     const mintFor = "0xB7312e0232bFe9FdF41726b3DF896edC6F442614";
-    await nftContract.mint(mintFor);
-    await nftContract.mint(mintFor);
-    await nftContract.mint(mintFor);
-    await nftContract.mint(mintFor);
-    await nftContract.mint(mintFor);
-    await nftContract.mint(mintFor);
-    await nftContract.mint(mintFor);
-    await nftContract.mint(mintFor);
-    await nftContract.mint(mintFor);
-    await nftContract.mint(mintFor);
-    console.log("NFT address:", nftContract.address);
+    await permitContract.mint(mintFor, ethers.utils.parseEther("100000000"));
+
+    console.log("Token address:", permitContract.address);
   }
   
   main()

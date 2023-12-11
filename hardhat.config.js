@@ -10,7 +10,7 @@ const ROPSTEN_PRIVATE_KEY = process.env.ROPSTEN_PRIVATE_KEY;
 module.exports = {
   solidity: "0.8.13",
   networks: {
-    ropsten: {
+    mainnet: {
       url: process.env.INFURA,
       accounts: [`${ROPSTEN_PRIVATE_KEY}`, process.env.MULE_PRIVATE_KEY]
     },

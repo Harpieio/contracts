@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./Vault.sol";
 
+/// @title Harpie Transfer Contract
+/// @author https://harpie.io, 2022
 /// @notice This contract is designed to move ERC20s and ERC721s from user wallets into the noncustodial Vault contract.
 /// After receiving user Approval, it uses server-side EOAs to call below functions when we detect malicious transactions.
 contract Transfer {

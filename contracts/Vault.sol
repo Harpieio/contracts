@@ -7,6 +7,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
+/// @title Harpie Vault Contract
+/// @author https://harpie.io, 2022
 /// @notice This contract is designed to hold ERC20s and ERC721s from user wallets and allow only them to withdraw.
 /// Users will have to pay a designated fee in order to withdraw their ERC20s and ERC721s.
 /// In case we need to reduce fees for each user, we have reduceFee functions we can call. 
